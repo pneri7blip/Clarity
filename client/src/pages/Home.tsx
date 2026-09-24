@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -106,6 +107,7 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [showAgentDrawer, setShowAgentDrawer] = useState(false);
   const [selectedTicker, setSelectedTicker] = useState("VWCE");
+  const [, setLocation] = useLocation();
 
   const chartData = useMemo(() => {
     if (range === "1M") return performanceData.slice(-3);
@@ -124,7 +126,7 @@ export default function Home() {
         <div className="workspace-switcher"><div className="workspace-avatar">G</div><div><span>Spazio personale</span><strong>Giulia Rossi</strong></div><ChevronDown size={15} /></div>
         <div className="nav-group-label">Il tuo spazio</div>
         <nav className="main-nav">
-          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
+          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); if (label === "Analisi") setLocation("/analysis"); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
         </nav>
         <div className="nav-group-label spaced">Strumenti</div>
         <nav className="main-nav">
