@@ -1,8 +1,8 @@
-# Atlas Invest — Product Case Study
+# Clarity — Product Case Study
 
 ## Summary
 
-Atlas Invest is a concept for an AI-assisted investment intelligence platform aimed at retail investors. It is designed to help users understand markets, individual securities, and long-term financial choices without requiring professional-level financial literacy.
+Clarity is a concept for an AI-assisted investment intelligence platform aimed at retail investors. It is designed to help users understand markets, individual securities, and long-term financial choices without requiring professional-level financial literacy.
 
 The MVP deliberately avoids automated trading. It focuses on research, explanation, and portfolio awareness: three areas where an AI interface can reduce complexity while keeping the user in control.
 
@@ -10,7 +10,7 @@ The MVP deliberately avoids automated trading. It focuses on research, explanati
 
 Retail investors rarely lack access to information. They lack a coherent way to interpret it. Market prices, fundamentals, macroeconomic news, and personal goals are commonly presented as separate experiences. This increases decision fatigue and can make users overreact to short-term noise.
 
-Atlas addresses this problem by giving each piece of analysis a clear context: what changed, why it matters, which risks are relevant, and how the information relates to the user’s stated horizon.
+Clarity addresses this problem by giving each piece of analysis a clear context: what changed, why it matters, which risks are relevant, and how the information relates to the user’s stated horizon.
 
 ## Target user
 

@@ -156,14 +156,14 @@ export default function Home() {
         <div className="page-container">
           <section className="welcome-row">
             <div><div className="welcome-kicker"><span className="status-pulse" /> Mercati aperti · Giovedì 24 settembre 2026</div><h1>Buongiorno, Giulia <span>✦</span></h1><p>Il tuo patrimonio sta seguendo il piano. Ecco cosa merita attenzione oggi.</p></div>
-            <button className="primary-button" onClick={() => setShowAgentDrawer(true)}><Sparkles size={17} /> Chiedi ad Atlas</button>
+            <button className="primary-button" onClick={() => setShowAgentDrawer(true)}><Sparkles size={17} /> Chiedi ad Clarity</button>
           </section>
 
           <section className="stats-grid">
             <StatCard label="Patrimonio investito" value="€ 48.620,40" trend="+8,6%" trendLabel="quest'anno" icon={WalletCards} tone="green" />
             <StatCard label="Risultato di oggi" value="+€ 286,90" trend="+0,59%" trendLabel="vs. ieri" icon={TrendingUp} tone="blue" />
             <StatCard label="Liquidità disponibile" value="€ 6.240,00" trend="12,8%" trendLabel="del patrimonio" icon={CreditCard} />
-            <div className="risk-card"><div className="risk-card-top"><span className="eyebrow">Profilo Atlas</span><span className="risk-score">B</span></div><strong>Bilanciato</strong><div className="risk-scale"><span className="filled" /><span className="filled" /><span className="filled" /><span /><span /></div><div className="risk-foot"><span>Rischio 3/5</span><button onClick={() => setActiveNav("Piani")}>Modifica <ChevronRight size={13} /></button></div></div>
+            <div className="risk-card"><div className="risk-card-top"><span className="eyebrow">Profilo Clarity</span><span className="risk-score">B</span></div><strong>Bilanciato</strong><div className="risk-scale"><span className="filled" /><span className="filled" /><span className="filled" /><span /><span /></div><div className="risk-foot"><span>Rischio 3/5</span><button onClick={() => setActiveNav("Piani")}>Modifica <ChevronRight size={13} /></button></div></div>
           </section>
 
           <div className="main-grid">
@@ -178,7 +178,7 @@ export default function Home() {
             <section className="panel allocation-panel">
               <SectionTitle eyebrow="Asset allocation" title="Dove sono i tuoi soldi" action="Ribilancia" />
               <div className="allocation-content"><div className="donut" aria-label="Distribuzione portafoglio"><div><strong>48,6k</strong><span>totale</span></div></div><div className="allocation-legend"><div><span className="legend-dot equity" /><span>Azionario</span><strong>58%</strong></div><div><span className="legend-dot bonds" /><span>Obbligazionario</span><strong>27%</strong></div><div><span className="legend-dot cash" /><span>Liquidità</span><strong>13%</strong></div><div><span className="legend-dot other" /><span>Altro</span><strong>2%</strong></div></div></div>
-              <div className="allocation-callout"><Zap size={15} /><span>Sei <strong>2,4%</strong> sotto il target azionario. Atlas suggerisce di non intervenire oggi.</span></div>
+              <div className="allocation-callout"><Zap size={15} /><span>Sei <strong>2,4%</strong> sotto il target azionario. Clarity suggerisce di non intervenire oggi.</span></div>
             </section>
           </div>
 
@@ -189,7 +189,7 @@ export default function Home() {
             </section>
 
             <section className="panel agents-panel">
-              <div className="agent-header"><div className="agent-orb"><Bot size={19} /></div><div><span className="eyebrow">Atlas intelligence</span><h2>I tuoi agenti AI</h2></div><span className="online-label"><span className="live-dot" /> online</span></div>
+              <div className="agent-header"><div className="agent-orb"><Bot size={19} /></div><div><span className="eyebrow">Clarity intelligence</span><h2>I tuoi agenti AI</h2></div><span className="online-label"><span className="live-dot" /> online</span></div>
               <p className="agent-intro">Tre prospettive diverse, una decisione più consapevole.</p>
               <div className="agent-list">{agentItems.map(({ label, detail, icon: Icon, color, status }) => <button className="agent-row" key={label} onClick={() => setShowAgentDrawer(true)}><span className={`agent-icon ${color}`}><Icon size={17} /></span><span className="agent-copy"><strong>{label}</strong><small>{detail}</small></span><span className={`agent-status ${status === "Attivo" ? "active" : ""}`}>{status}</span><ChevronRight size={15} /></button>)}</div>
               <button className="agent-cta" onClick={() => setShowAgentDrawer(true)}><MessageCircle size={16} /> Apri il briefing del giorno <ChevronRight size={15} /></button>
@@ -197,11 +197,11 @@ export default function Home() {
           </div>
 
           <section className="insight-banner"><div className="insight-symbol"><Sparkles size={19} /></div><div><span className="eyebrow">Insight del giorno · Analista titoli</span><strong>Il tuo portafoglio è ben diversificato, ma il 31% è esposto al settore tech.</strong><p>Scopri come questa concentrazione può influenzare il rischio nei prossimi 12 mesi.</p></div><button className="secondary-button" onClick={() => setShowAgentDrawer(true)}>Esplora insight <ChevronRight size={15} /></button></section>
-          <div className="disclaimer"><LockKeyhole size={13} /> Atlas offre informazioni e simulazioni educative, non consulenza finanziaria personalizzata. I dati mostrati sono demo.</div>
+          <div className="disclaimer"><LockKeyhole size={13} /> Clarity offre informazioni e simulazioni educative, non consulenza finanziaria personalizzata. I dati mostrati sono demo.</div>
         </div>
       </main>
 
-      {showAgentDrawer && <div className="drawer-backdrop" onClick={() => setShowAgentDrawer(false)}><aside className="agent-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-top"><div><span className="eyebrow">Atlas intelligence</span><h2>Briefing del giorno</h2></div><button className="small-icon-button" onClick={() => setShowAgentDrawer(false)}><X size={18} /></button></div><div className="briefing-date"><Clock3 size={14} /> Aggiornato oggi alle 08:42 · 12 fonti analizzate</div><div className="briefing-highlight"><span className="agent-icon mint"><Globe2 size={18} /></span><div><strong>Scout mercati</strong><p>I mercati europei aprono cauti dopo i dati sull'inflazione USA. Il quadro resta costruttivo per l'azionario globale, con volatilità in calo.</p></div></div><div className="drawer-section"><span className="eyebrow">Cosa merita attenzione</span><div className="drawer-item"><span className="drawer-number">01</span><div><strong>Obbligazioni governative</strong><p>I rendimenti BTP a 10 anni sono scesi di 7 punti base. Il tuo 27% obbligazionario resta in linea con il piano.</p></div></div><div className="drawer-item"><span className="drawer-number">02</span><div><strong>Concentrazione tech</strong><p>Microsoft e il tuo ETF globale portano l'esposizione tech al 31%. Nessuna urgenza: rivedila al prossimo versamento.</p></div></div></div><div className="drawer-question"><span className="agent-icon violet"><MessageCircle size={16} /></span><div><strong>Hai una domanda?</strong><p>Chiedi ad Atlas di spiegarti un titolo, un BTP o il tuo piano.</p></div><ChevronRight size={16} /></div><button className="primary-button full" onClick={() => setShowAgentDrawer(false)}>Inizia una conversazione <MessageCircle size={16} /></button></aside></div>}
+      {showAgentDrawer && <div className="drawer-backdrop" onClick={() => setShowAgentDrawer(false)}><aside className="agent-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-top"><div><span className="eyebrow">Clarity intelligence</span><h2>Briefing del giorno</h2></div><button className="small-icon-button" onClick={() => setShowAgentDrawer(false)}><X size={18} /></button></div><div className="briefing-date"><Clock3 size={14} /> Aggiornato oggi alle 08:42 · 12 fonti analizzate</div><div className="briefing-highlight"><span className="agent-icon mint"><Globe2 size={18} /></span><div><strong>Scout mercati</strong><p>I mercati europei aprono cauti dopo i dati sull'inflazione USA. Il quadro resta costruttivo per l'azionario globale, con volatilità in calo.</p></div></div><div className="drawer-section"><span className="eyebrow">Cosa merita attenzione</span><div className="drawer-item"><span className="drawer-number">01</span><div><strong>Obbligazioni governative</strong><p>I rendimenti BTP a 10 anni sono scesi di 7 punti base. Il tuo 27% obbligazionario resta in linea con il piano.</p></div></div><div className="drawer-item"><span className="drawer-number">02</span><div><strong>Concentrazione tech</strong><p>Microsoft e il tuo ETF globale portano l'esposizione tech al 31%. Nessuna urgenza: rivedila al prossimo versamento.</p></div></div></div><div className="drawer-question"><span className="agent-icon violet"><MessageCircle size={16} /></span><div><strong>Hai una domanda?</strong><p>Chiedi ad Clarity di spiegarti un titolo, un BTP o il tuo piano.</p></div><ChevronRight size={16} /></div><button className="primary-button full" onClick={() => setShowAgentDrawer(false)}>Inizia una conversazione <MessageCircle size={16} /></button></aside></div>}
     </div>
   );
 }

@@ -1,12 +1,12 @@
-# Atlas Invest
+# Clarity
 
 > An AI-assisted investment intelligence platform for retail investors.
 
-Atlas helps everyday investors understand markets, individual securities, and long-term financial decisions through a calmer, more explainable interface. The product direction combines portfolio visibility, plain-language research, and specialized AI agents without presenting the system as an autonomous trading bot.
+Clarity helps everyday investors understand markets, individual securities, and long-term financial decisions through a calmer, more explainable interface. The product direction combines portfolio visibility, plain-language research, and specialized AI agents without presenting the system as an autonomous trading bot.
 
 ## Why this project exists
 
-Retail investors often face a fragmented experience: price charts in one place, financial statements in another, macroeconomic news elsewhere, and little help translating all of it into a coherent decision. Atlas explores how an AI-native product can reduce that cognitive load while preserving user agency.
+Retail investors often face a fragmented experience: price charts in one place, financial statements in another, macroeconomic news elsewhere, and little help translating all of it into a coherent decision. Clarity explores how an AI-native product can reduce that cognitive load while preserving user agency.
 
 The current MVP focuses on two connected experiences:
 
@@ -18,7 +18,7 @@ The interface is intentionally designed for a retail audience: dense enough to b
 ## Product principles
 
 1. **Explain before suggesting.** Every insight should show the reasoning, the relevant risk, and the timestamp of the underlying data.
-2. **Support decisions, do not automate trust.** Atlas is an educational and research-oriented assistant in this MVP; it does not place trades.
+2. **Support decisions, do not automate trust.** Clarity is an educational and research-oriented assistant in this MVP; it does not place trades.
 3. **Make uncertainty visible.** Scores are signals, not guarantees. The product should communicate confidence, missing data, and scenario sensitivity.
 4. **Design for progressive disclosure.** The first view answers “what matters now?” while deeper metrics remain available for users who want to investigate.
 
@@ -37,7 +37,7 @@ The interface is intentionally designed for a retail audience: dense enough to b
 
 ## Technical approach
 
-Atlas is built as a full-stack WebDev project using React, TypeScript, Vite, Tailwind CSS, Express, tRPC, Drizzle, and MySQL/TiDB-ready infrastructure.
+Clarity is built as a full-stack WebDev project using React, TypeScript, Vite, Tailwind CSS, Express, tRPC, Drizzle, and MySQL/TiDB-ready infrastructure.
 
 ```text
 React + TypeScript UI
@@ -91,7 +91,7 @@ This repository is a product prototype and portfolio project. It uses demo finan
 
 ## Portfolio context
 
-This project demonstrates product thinking across UX, AI interaction design, financial-data architecture, and full-stack implementation. The main design challenge is balancing approachable language with the precision expected by an investor. The core trade-off is intentionally visible: Atlas keeps the first screen simple, while allowing deeper research through progressive disclosure.
+This project demonstrates product thinking across UX, AI interaction design, financial-data architecture, and full-stack implementation. The main design challenge is balancing approachable language with the precision expected by an investor. The core trade-off is intentionally visible: Clarity keeps the first screen simple, while allowing deeper research through progressive disclosure.
 
 ## License
 
