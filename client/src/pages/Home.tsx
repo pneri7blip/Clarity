@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ArrowDownRight,
@@ -35,6 +35,7 @@ import {
   Zap,
 } from "lucide-react";
 import { formatPercent } from "@shared/format";
+import { OnboardingDialog, type OnboardingProfile } from "@/components/OnboardingDialog";
 import {
   Area,
   AreaChart,
@@ -107,7 +108,26 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [showAgentDrawer, setShowAgentDrawer] = useState(false);
   const [selectedTicker, setSelectedTicker] = useState("VWCE");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [language, setLanguage] = useState<"it" | "en">("it");
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    setShowOnboarding(localStorage.getItem("clarity-onboarding-complete") !== "true");
+    setLanguage((localStorage.getItem("clarity-language") as "it" | "en" | null) ?? "it");
+  }, []);
+
+  const completeOnboarding = (profile: OnboardingProfile) => {
+    localStorage.setItem("clarity-onboarding-complete", "true");
+    localStorage.setItem("clarity-profile", JSON.stringify(profile));
+    setShowOnboarding(false);
+  };
+
+  const toggleLanguage = () => {
+    const next = language === "it" ? "en" : "it";
+    setLanguage(next);
+    localStorage.setItem("clarity-language", next);
+  };
 
   const chartData = useMemo(() => {
     if (range === "1M") return performanceData.slice(-3);
@@ -149,14 +169,14 @@ export default function Home() {
             {showSearch ? <div className="search-wrap"><Search size={16} /><input autoFocus placeholder="Cerca un titolo, ETF o BTP" onBlur={() => setShowSearch(false)} /></div> : <button className="icon-button" onClick={() => setShowSearch(true)} aria-label="Cerca"><Search size={19} /></button>}
             <button className="icon-button notification" aria-label="Notifiche"><Bell size={19} /><span /></button>
             <div className="topbar-divider" />
-            <div className="avatar">GR</div>
+            <button className="language-toggle" onClick={toggleLanguage} aria-label="Cambia lingua">{language.toUpperCase()}</button><div className="avatar">GR</div>
           </div>
         </header>
 
         <div className="page-container">
           <section className="welcome-row">
-            <div><div className="welcome-kicker"><span className="status-pulse" /> Mercati aperti · Giovedì 24 settembre 2026</div><h1>Buongiorno, Giulia <span>✦</span></h1><p>Il tuo patrimonio sta seguendo il piano. Ecco cosa merita attenzione oggi.</p></div>
-            <button className="primary-button" onClick={() => setShowAgentDrawer(true)}><Sparkles size={17} /> Chiedi ad Clarity</button>
+            <div><div className="welcome-kicker"><span className="status-pulse" /> {language === "it" ? "Mercati aperti · Giovedì 24 settembre 2026" : "Markets open · Thursday, September 24, 2026"}</div><h1>{language === "it" ? "Buongiorno, Giulia" : "Good morning, Giulia"} <span>✦</span></h1><p>{language === "it" ? "Il tuo patrimonio sta seguendo il piano. Ecco cosa merita attenzione oggi." : "Your portfolio is on track. Here is what deserves attention today."}</p></div>
+            <button className="primary-button" onClick={() => setShowAgentDrawer(true)}><Sparkles size={17} /> {language === "it" ? "Chiedi ad Clarity" : "Ask Clarity"}</button>
           </section>
 
           <section className="stats-grid">
@@ -201,7 +221,8 @@ export default function Home() {
         </div>
       </main>
 
-      {showAgentDrawer && <div className="drawer-backdrop" onClick={() => setShowAgentDrawer(false)}><aside className="agent-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-top"><div><span className="eyebrow">Clarity intelligence</span><h2>Briefing del giorno</h2></div><button className="small-icon-button" onClick={() => setShowAgentDrawer(false)}><X size={18} /></button></div><div className="briefing-date"><Clock3 size={14} /> Aggiornato oggi alle 08:42 · 12 fonti analizzate</div><div className="briefing-highlight"><span className="agent-icon mint"><Globe2 size={18} /></span><div><strong>Scout mercati</strong><p>I mercati europei aprono cauti dopo i dati sull'inflazione USA. Il quadro resta costruttivo per l'azionario globale, con volatilità in calo.</p></div></div><div className="drawer-section"><span className="eyebrow">Cosa merita attenzione</span><div className="drawer-item"><span className="drawer-number">01</span><div><strong>Obbligazioni governative</strong><p>I rendimenti BTP a 10 anni sono scesi di 7 punti base. Il tuo 27% obbligazionario resta in linea con il piano.</p></div></div><div className="drawer-item"><span className="drawer-number">02</span><div><strong>Concentrazione tech</strong><p>Microsoft e il tuo ETF globale portano l'esposizione tech al 31%. Nessuna urgenza: rivedila al prossimo versamento.</p></div></div></div><div className="drawer-question"><span className="agent-icon violet"><MessageCircle size={16} /></span><div><strong>Hai una domanda?</strong><p>Chiedi ad Clarity di spiegarti un titolo, un BTP o il tuo piano.</p></div><ChevronRight size={16} /></div><button className="primary-button full" onClick={() => setShowAgentDrawer(false)}>Inizia una conversazione <MessageCircle size={16} /></button></aside></div>}
+      {showAgentDrawer && <div className="drawer-backdrop" onClick={() => setShowAgentDrawer(false)}><aside className="agent-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-top"><div><span className="eyebrow">Clarity intelligence</span><h2>{language === "it" ? "Briefing del giorno" : "Daily briefing"}</h2></div><button className="small-icon-button" onClick={() => setShowAgentDrawer(false)}><X size={18} /></button></div><div className="briefing-date"><Clock3 size={14} /> {language === "it" ? "Aggiornato oggi alle 08:42 · 12 fonti analizzate" : "Updated today at 08:42 · 12 sources analysed"}</div><div className="briefing-highlight"><span className="agent-icon mint"><Globe2 size={18} /></span><div><strong>Scout mercati</strong><p>{language === "it" ? "I mercati europei aprono cauti dopo i dati sull'inflazione USA. Il quadro resta costruttivo per l'azionario globale, con volatilità in calo." : "European markets opened cautiously after US inflation data. The global equity outlook remains constructive, with volatility easing."}</p></div></div><div className="drawer-section"><span className="eyebrow">{language === "it" ? "Cosa merita attenzione" : "What deserves attention"}</span><div className="drawer-item"><span className="drawer-number">01</span><div><strong>{language === "it" ? "Obbligazioni governative" : "Government bonds"}</strong><p>{language === "it" ? "I rendimenti BTP a 10 anni sono scesi di 7 punti base. Il tuo 27% obbligazionario resta in linea con il piano." : "10-year BTP yields fell 7 basis points. Your 27% bond allocation remains aligned with the plan."}</p></div></div><div className="drawer-item"><span className="drawer-number">02</span><div><strong>{language === "it" ? "Concentrazione tech" : "Tech concentration"}</strong><p>{language === "it" ? "Microsoft e il tuo ETF globale portano l'esposizione tech al 31%. Nessuna urgenza: rivedila al prossimo versamento." : "Microsoft and your global ETF bring tech exposure to 31%. No urgency: review it at your next contribution."}</p></div></div></div><div className="drawer-question"><span className="agent-icon violet"><MessageCircle size={16} /></span><div><strong>{language === "it" ? "Hai una domanda?" : "Have a question?"}</strong><p>{language === "it" ? "Chiedi ad Clarity di spiegarti un titolo, un BTP o il tuo piano." : "Ask Clarity to explain a stock, a bond or your plan."}</p></div><ChevronRight size={16} /></div><button className="primary-button full" onClick={() => setShowAgentDrawer(false)}>{language === "it" ? "Inizia una conversazione" : "Start a conversation"} <MessageCircle size={16} /></button></aside></div>}
+      {showOnboarding && <OnboardingDialog onComplete={completeOnboarding} onClose={() => { localStorage.setItem("clarity-onboarding-complete", "true"); setShowOnboarding(false); }} />}
     </div>
   );
 }
