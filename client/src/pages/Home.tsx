@@ -120,7 +120,7 @@ export default function Home() {
       <aside className={`sidebar ${showMobileNav ? "mobile-open" : ""}`}>
         <div className="brand-row">
           <div className="brand-mark"><span /></div>
-          <div className="brand-name">atlas<span>.</span></div>
+          <div className="brand-name">Clarity<span>.</span></div>
           <button className="mobile-close" onClick={() => setShowMobileNav(false)} aria-label="Chiudi menu"><X size={20} /></button>
         </div>
         <div className="workspace-switcher"><div className="workspace-avatar">G</div><div><span>Spazio personale</span><strong>Giulia Rossi</strong></div><ChevronDown size={15} /></div>
