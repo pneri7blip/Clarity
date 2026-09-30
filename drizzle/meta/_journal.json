@@ -8,6 +8,13 @@
       "when": 1790220950277,
       "tag": "0000_salty_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1790306872534,
+      "tag": "0001_shallow_raider",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { formatPercent } from "@shared/format";
 import { OnboardingDialog, type OnboardingProfile } from "@/components/OnboardingDialog";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import {
   Area,
   AreaChart,
@@ -111,15 +113,27 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [language, setLanguage] = useState<"it" | "en">("it");
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
+  const { data: savedProfile } = trpc.profile.get.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60_000 });
+  const saveProfile = trpc.profile.save.useMutation();
 
   useEffect(() => {
     setShowOnboarding(localStorage.getItem("clarity-onboarding-complete") !== "true");
     setLanguage((localStorage.getItem("clarity-language") as "it" | "en" | null) ?? "it");
   }, []);
 
+  useEffect(() => {
+    if (savedProfile) {
+      localStorage.setItem("clarity-onboarding-complete", "true");
+      localStorage.setItem("clarity-profile", JSON.stringify(savedProfile));
+      setShowOnboarding(false);
+    }
+  }, [savedProfile]);
+
   const completeOnboarding = (profile: OnboardingProfile) => {
     localStorage.setItem("clarity-onboarding-complete", "true");
     localStorage.setItem("clarity-profile", JSON.stringify(profile));
+    if (isAuthenticated) saveProfile.mutate(profile);
     setShowOnboarding(false);
   };
 
@@ -146,7 +160,7 @@ export default function Home() {
         <div className="workspace-switcher"><div className="workspace-avatar">G</div><div><span>Spazio personale</span><strong>Giulia Rossi</strong></div><ChevronDown size={15} /></div>
         <div className="nav-group-label">Il tuo spazio</div>
         <nav className="main-nav">
-          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); if (label === "Analisi") setLocation("/analysis"); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
+          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); if (label === "Analisi") setLocation("/analysis"); if (label === "Piani") setLocation("/planner"); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
         </nav>
         <div className="nav-group-label spaced">Strumenti</div>
         <nav className="main-nav">
