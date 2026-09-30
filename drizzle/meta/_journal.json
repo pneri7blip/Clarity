@@ -15,6 +15,13 @@
       "when": 1790306872534,
       "tag": "0001_shallow_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1790743987350,
+      "tag": "0002_tearful_goblin_queen",
+      "breakpoints": true
     }
   ]
 }

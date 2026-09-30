@@ -160,11 +160,12 @@ export default function Home() {
         <div className="workspace-switcher"><div className="workspace-avatar">G</div><div><span>Spazio personale</span><strong>Giulia Rossi</strong></div><ChevronDown size={15} /></div>
         <div className="nav-group-label">Il tuo spazio</div>
         <nav className="main-nav">
-          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); if (label === "Analisi") setLocation("/analysis"); if (label === "Piani") setLocation("/planner"); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
+          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); if (label === "Analisi") setLocation("/analysis"); if (label === "Piani") setLocation("/planner"); if (label === "Portafoglio") setLocation("/portfolio"); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
         </nav>
         <div className="nav-group-label spaced">Strumenti</div>
         <nav className="main-nav">
           <button className="nav-item" onClick={() => setShowAgentDrawer(true)}><Bot size={18} /><span>Agenti AI</span><span className="live-dot" /></button>
+          <button className="nav-item" onClick={() => setLocation("/alerts")}><Bell size={18} /><span>Notifiche</span><span className="live-dot" /></button>
           <button className="nav-item" onClick={() => setActiveNav("Report")}><FileText size={18} /><span>Report</span></button>
           <button className="nav-item" onClick={() => setActiveNav("Impostazioni")}><Settings2 size={18} /><span>Impostazioni</span></button>
         </nav>

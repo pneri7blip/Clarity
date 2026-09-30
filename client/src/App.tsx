@@ -3,6 +3,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import Analysis from "@/pages/Analysis";
 import Planner from "@/pages/Planner";
+import Portfolio from "@/pages/Portfolio";
+import Alerts from "@/pages/Alerts";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -15,6 +17,8 @@ function Router() {
       <Route path="/dashboard" component={Home} />
       <Route path="/analysis" component={Analysis} />
       <Route path="/planner" component={Planner} />
+      <Route path="/portfolio" component={Portfolio} />
+      <Route path="/alerts" component={Alerts} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
