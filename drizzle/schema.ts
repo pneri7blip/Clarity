@@ -46,9 +46,20 @@ export const alerts = mysqlTable("alerts", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const alertEvents = mysqlTable("alert_events", {
+  id: int("id").autoincrement().primaryKey(),
+  profileKey: varchar("profileKey", { length: 120 }).notNull(),
+  alertId: int("alertId").notNull(),
+  symbol: varchar("symbol", { length: 32 }).notNull(),
+  message: varchar("message", { length: 255 }).notNull(),
+  triggeredAt: timestamp("triggeredAt").defaultNow().notNull(),
+  acknowledged: int("acknowledged").notNull().default(0),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type InvestorProfile = typeof investorProfiles.$inferSelect;
 export type InsertInvestorProfile = typeof investorProfiles.$inferInsert;
 export type PortfolioPosition = typeof portfolioPositions.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
+export type AlertEvent = typeof alertEvents.$inferSelect;

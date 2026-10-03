@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, investorProfiles, users, portfolioPositions, alerts } from "../drizzle/schema";
+import { InsertUser, investorProfiles, users, portfolioPositions, alerts, alertEvents } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -38,3 +38,6 @@ export async function replacePositions(profileKey: string, positions: Array<{ sy
 export async function listAlerts(profileKey: string) { const db = await getDb(); if (!db) return []; return db.select().from(alerts).where(eq(alerts.profileKey, profileKey)); }
 export async function createAlert(alert: { profileKey: string; symbol: string; kind: string; threshold: string }) { const db = await getDb(); if (!db) return; await db.insert(alerts).values(alert); }
 export async function toggleAlert(profileKey: string, id: number, enabled: boolean) { const db = await getDb(); if (!db) return; await db.update(alerts).set({ enabled: enabled ? 1 : 0, updatedAt: new Date() }).where(and(eq(alerts.id, id), eq(alerts.profileKey, profileKey))); }
+export async function listAllEnabledAlerts() { const db = await getDb(); if (!db) return []; return db.select().from(alerts).where(eq(alerts.enabled, 1)); }
+export async function listAlertEvents(profileKey: string) { const db = await getDb(); if (!db) return []; return db.select().from(alertEvents).where(eq(alertEvents.profileKey, profileKey)); }
+export async function createAlertEvent(event: { profileKey: string; alertId: number; symbol: string; message: string }) { const db = await getDb(); if (!db) return; await db.insert(alertEvents).values(event); }

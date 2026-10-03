@@ -12,10 +12,11 @@ Clarity is a product prototype exploring how AI agents can support retail invest
 
 Retail investors often face a fragmented experience: price charts in one place, financial statements in another, macroeconomic news elsewhere, and little help translating all of it into a coherent decision. Clarity explores how an AI-native product can reduce that cognitive load while preserving user agency.
 
-The current MVP focuses on two connected experiences:
+The current MVP focuses on three connected experiences:
 
 - **Portfolio overview:** a dashboard for performance, allocation, watchlists, and daily market context.
 - **Instrument analysis:** a focused research workspace for ETFs, equities, and government bonds with a score, key metrics, plain-language thesis, and risk framing.
+- **Private portfolio workspace:** authenticated investor profiles, CSV import, live quote enrichment, portfolio P&L, concentration metrics, and alert history.
 
 The interface is intentionally designed for a retail audience: dense enough to be useful, but structured around explanations rather than financial jargon.
 
@@ -37,6 +38,10 @@ The interface is intentionally designed for a retail audience: dense enough to b
 - Daily AI briefing drawer.
 - Instrument analysis page with search, score, metrics, thesis, risks, and source metadata.
 - Mobile navigation and responsive layouts.
+- Authenticated multi-profile portfolio area with CSV import (`symbol,quantity,averagePrice,currency`).
+- Live valuation enrichment through a server-side Yahoo Finance adapter, with source/timestamp and transparent fallback states.
+- Deterministic diversification and concentration insights based on holding weights, plus price-threshold alert rules.
+- Alert event history with duplicate suppression and a protected scheduled-monitor endpoint ready for deployment-managed heartbeat checks.
 - Vitest coverage for shared formatting logic and existing authentication behavior.
 
 ## Technical approach
@@ -52,10 +57,10 @@ Express server + authentication
         ↓
 Drizzle / MySQL-compatible persistence
         ↓
-Future market-data adapters and AI job workers
+Server-side market-data adapters + deterministic alert monitor
 ```
 
-The current financial content is deliberately demo data. The next implementation step is to introduce a provider-agnostic market-data layer with timestamps, caching, source metadata, and normalized schemas before exposing live data to AI agents.
+Market data is accessed server-side through Yahoo Finance for current quote enrichment. Each result carries source, timestamp, and availability metadata; when a quote is unavailable, Clarity keeps the cost basis visible instead of inventing a current value. Alert evaluation is deterministic and stores profile-scoped events; the production deployment can attach the protected `/api/scheduled/check-alerts` callback to a managed heartbeat.
 
 ## Local development
 
@@ -73,25 +78,26 @@ pnpm test
 
 ## Roadmap
 
-### Next milestone: research assistant
+### Next milestone: connected intelligence
 
-- Add a real market-data provider behind a normalized adapter.
+- Add caching and freshness policies around the normalized market-data adapter.
 - Add an analysis API that stores source, timestamp, and confidence metadata.
 - Replace hardcoded instrument details with fetched data.
 - Add a structured AI response for thesis, risks, and missing information.
 
 ### Later milestones
 
-- User onboarding and risk profiling.
-- Personal goals and long-term planning.
-- Portfolio import and concentration analysis.
-- Alerts and scheduled briefings.
+- ~~User onboarding and risk profiling.~~
+- ~~Personal goals and long-term planning.~~
+- ~~Portfolio import and concentration analysis.~~
+- ~~Alerts and scheduled event history.~~
+- Connect the deployed monitor to a managed recurring heartbeat and add user-facing delivery preferences.
 - Italian pension planning and tax-aware simulations.
 - Broker integrations only after security, compliance, and operational controls are reviewed.
 
 ## Scope and limitations
 
-This repository is a product prototype and portfolio project. It uses demo financial data and does not provide financial advice, execute trades, or connect to a broker. A production version would require data licensing, security hardening, privacy controls, audit logs, legal review, and jurisdiction-specific compliance work.
+This repository is a product prototype and portfolio project. It does not provide financial advice, execute trades, or connect to a broker. Portfolio values depend on the availability and currency conventions of the upstream quote provider; the MVP currently uses a manual refresh and profile-scoped event history. A production version would require data licensing, caching and retry policies, security hardening, privacy controls, audit logs, legal review, jurisdiction-specific compliance work, and a deployed recurring monitor.
 
 ## Portfolio context
 

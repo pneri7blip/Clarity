@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { callDataApi } from "./_core/dataApi";
-import { createAlert, getInvestorProfile, getInvestorProfileByKey, listAlerts, listInvestorProfiles, listPositions, replacePositions, toggleAlert, upsertInvestorProfile } from "./db";
+import { createAlert, getInvestorProfile, getInvestorProfileByKey, listAlertEvents, listAlerts, listInvestorProfiles, listPositions, replacePositions, toggleAlert, upsertInvestorProfile } from "./db";
+import { fetchLiveQuote, evaluateAlertsForProfile } from "./alertMonitor";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -24,11 +25,34 @@ export const appRouter = router({
   portfolio: router({
     list: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return listPositions(input.profileKey); }),
     import: protectedProcedure.input(z.object({ profileKey, positions: z.array(z.object({ symbol: z.string().min(1), quantity: z.string().min(1), averagePrice: z.string().min(1), currency: z.string().min(1).max(8) })).max(200) })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await replacePositions(input.profileKey, input.positions); return { success: true, count: input.positions.length } as const; }),
+    insights: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => {
+      await requireOwnedProfile(ctx.user.openId, input.profileKey);
+      const positions = await listPositions(input.profileKey);
+      const holdings = [];
+      for (const position of positions) {
+        const quote = await fetchLiveQuote(position.symbol);
+        const quantity = Number(position.quantity);
+        const averagePrice = Number(position.averagePrice);
+        const cost = quantity * averagePrice;
+        const currentValue = quote.available ? quantity * quote.price : cost;
+        holdings.push({ id: position.id, symbol: position.symbol, quantity, averagePrice, currency: position.currency, cost, currentPrice: quote.available ? quote.price : null, currentValue, pnl: currentValue - cost, changePct: quote.available && quote.previous ? ((quote.price - quote.previous) / quote.previous) * 100 : null, available: quote.available, source: quote.source, asOf: quote.asOf });
+      }
+      const invested = holdings.reduce((sum, item) => sum + item.cost, 0);
+      const currentValue = holdings.reduce((sum, item) => sum + item.currentValue, 0);
+      const weights = holdings.map((item) => invested ? item.cost / invested : 0);
+      const herfindahl = weights.reduce((sum, weight) => sum + weight * weight, 0);
+      const topWeight = Math.max(0, ...weights);
+      const diversificationScore = holdings.length === 0 ? 0 : Math.max(0, Math.min(100, Math.round((1 - herfindahl) * 100)));
+      const riskLabel = topWeight >= 0.7 ? "Concentrazione alta" : topWeight >= 0.45 ? "Concentrazione da monitorare" : holdings.length < 3 ? "Portafoglio essenziale" : "Diversificazione equilibrata";
+      return { holdings, invested, currentValue, pnl: currentValue - invested, liveCount: holdings.filter((item) => item.available).length, totalCount: holdings.length, topWeight, diversificationScore, riskLabel, asOf: Date.now() };
+    }),
   }),
   alerts: router({
     list: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return listAlerts(input.profileKey); }),
+    events: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return listAlertEvents(input.profileKey); }),
     create: protectedProcedure.input(z.object({ profileKey, symbol: z.string().min(1), kind: z.enum(["price_above", "price_below", "goal_risk"]), threshold: z.string().min(1) })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await createAlert(input); return { success: true } as const; }),
     toggle: protectedProcedure.input(z.object({ profileKey, id: z.number(), enabled: z.boolean() })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await toggleAlert(input.profileKey, input.id, input.enabled); return { success: true } as const; }),
+    check: protectedProcedure.input(z.object({ profileKey })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return evaluateAlertsForProfile(input.profileKey); }),
   }),
   market: router({
     quote: publicProcedure.input(quoteInput).query(async ({ input }) => { try { const response = await callDataApi("YahooFinance/get_stock_chart", { query: { symbol: input.symbol, region: input.region, lang: "en-US", interval: "1d", range: "5d", includeAdjustedClose: "true", includePrePost: "false" } }) as any; const meta = response?.chart?.result?.[0]?.meta ?? {}; const price = Number(meta.regularMarketPrice ?? meta.previousClose ?? 0); const previous = Number(meta.previousClose ?? price); return { available: price > 0, price, previous, changePct: previous ? ((price - previous) / previous) * 100 : 0, currency: meta.currency ?? "", exchange: meta.exchangeName ?? "", asOf: Number(meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000, source: "Yahoo Finance" }; } catch (error) { console.warn("[Market] Quote unavailable, using demo fallback", error); return { available: false, price: 0, previous: 0, changePct: 0, currency: "", exchange: "", asOf: Date.now(), source: "Demo fallback" }; } }),

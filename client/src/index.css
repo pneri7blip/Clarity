@@ -323,3 +323,30 @@ h1 span { color: #d2a365; font-size: .76em; vertical-align: 2px; margin-left: 4p
 .analysis-disclaimer { margin-top: 28px; color: #91a19b; display: flex; align-items: center; gap: 7px; font-size: 11px; }
 .portfolio-loading { min-height: 100vh; display: grid; place-items: center; color: #6b8278; }
 @media (max-width: 760px) { .portfolio-topbar { height: 62px; padding: 0 18px; } .portfolio-private { display: none; } .planner-brand { font-size: 17px; } .portfolio-page, .alerts-page { width: min(100% - 28px, 600px); padding-top: 35px; } .portfolio-heading, .alerts-heading { align-items: flex-start; flex-direction: column; gap: 18px; margin-bottom: 28px; } .portfolio-heading h1, .alerts-heading h1 { font-size: 34px; } .profile-switcher { align-items: flex-start; flex-direction: column; } .profile-actions { width: 100%; justify-content: flex-start; } .profile-actions select, .profile-actions input { flex: 1 1 130px; min-width: 0; } .portfolio-grid, .alerts-layout { grid-template-columns: 1fr; } .portfolio-card, .alerts-card { padding: 19px; } .positions-head { display: none; } .position-row { grid-template-columns: 1fr 1fr; gap: 6px 10px; } .position-row span:nth-child(2) { text-align: right; } .position-row strong:last-child { text-align: left; } .alerts-profile { padding: 18px; } .alerts-profile select { margin-left: 0; width: 100%; } .alerts-profile { flex-direction: column; align-items: stretch; } .analysis-disclaimer { align-items: flex-start; } }
+
+.portfolio-card-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.position-row strong small { display: block; color: #8a9b94; font-size: 9px; font-weight: 500; margin-top: 4px; letter-spacing: .02em; }
+.positive-value { color: #238965 !important; }
+.negative-value { color: #b65b52 !important; }
+.summary-pnl { font-size: 14px; font-weight: 700; margin-top: 14px; }
+.spin { animation: clarity-spin .8s linear infinite; }
+@keyframes clarity-spin { to { transform: rotate(360deg); } }
+.portfolio-insights, .events-card { margin-top: 20px; border: 1px solid #e0e9e5; border-radius: 16px; background: #fff; box-shadow: 0 12px 36px rgba(33, 71, 60, .055); padding: 25px; }
+.insight-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; }
+.insight-title h2 { font-family: 'Manrope', sans-serif; font-size: 22px; letter-spacing: -.03em; margin: 7px 0 0; }
+.insight-freshness { color: #8b9d95; font-size: 11px; }
+.risk-metrics { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 28px; margin-top: 24px; }
+.risk-metrics > div { border-left: 2px solid #d8eee6; padding-left: 14px; }
+.risk-metrics span { color: #80938b; font-size: 11px; display: block; margin-bottom: 8px; }
+.risk-metrics strong { color: #235745; font-family: 'Manrope', sans-serif; font-size: 26px; letter-spacing: -.04em; }
+.risk-metrics p { margin: 5px 0 0; color: #6d8178; font-size: 12px; }
+.metric-bar { height: 6px; background: #edf3f0; border-radius: 999px; overflow: hidden; margin-top: 12px; }
+.metric-bar i { display: block; height: 100%; background: #3cac82; border-radius: inherit; }
+.full-action { width: 100%; margin-top: 10px; }
+.events-card { margin-top: 20px; }
+.event-list { border-top: 1px solid #edf2ef; margin-top: 19px; }
+.event-row { display: grid; grid-template-columns: 39px 1fr; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid #edf2ef; }
+.event-row strong { display: block; font-size: 13px; color: #315548; font-weight: 600; }
+.event-row small { display: block; font-size: 11px; color: #97a49f; margin-top: 4px; }
+.events-empty { color: #7f918a; font-size: 13px; line-height: 1.6; margin: 20px 0 4px; }
+@media (max-width: 760px) { .portfolio-card-actions { justify-content: flex-start; } .risk-metrics { grid-template-columns: 1fr; gap: 17px; } .insight-title { flex-direction: column; } }
