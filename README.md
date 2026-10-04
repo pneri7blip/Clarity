@@ -2,6 +2,12 @@
 
 > An AI-assisted investment intelligence platform for retail investors.
 
+## Live demo
+
+[Open Clarity](https://clarity-production-1de3.up.railway.app/)
+
+The public Railway deployment is an educational MVP: it supports research, planning, authenticated portfolio tracking, CSV import, live quote enrichment, and profile-scoped alerts. It does **not** connect to brokers, place trades, or provide regulated financial advice.
+
 Clarity helps everyday investors understand markets, individual securities, and long-term financial decisions through a calmer, more explainable interface. The product direction combines portfolio visibility, plain-language research, and specialized AI agents without presenting the system as an autonomous trading bot.
 
 ### AI-Assisted Development
@@ -35,7 +41,7 @@ The interface is intentionally designed for a retail audience: dense enough to b
 - Asset-allocation visualization.
 - Watchlist for VWCE, Microsoft, Eni, and a BTP example.
 - Three conceptual AI agents: Market Scout, Securities Analyst, and Financial Coach.
-- Daily AI briefing drawer.
+- Daily briefing drawer with a server-side AI conversation flow and suggested prompts.
 - Instrument analysis page with search, score, metrics, thesis, risks, and source metadata.
 - Mobile navigation and responsive layouts.
 - Authenticated multi-profile portfolio area with CSV import (`symbol,quantity,averagePrice,currency`).

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { callDataApi } from "./_core/dataApi";
 import { createAlert, getInvestorProfile, getInvestorProfileByKey, listAlertEvents, listAlerts, listInvestorProfiles, listPositions, replacePositions, toggleAlert, upsertInvestorProfile } from "./db";
 import { fetchLiveQuote, evaluateAlertsForProfile } from "./alertMonitor";
+import { invokeLLM } from "./_core/llm";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -13,6 +14,20 @@ const requireOwnedProfile = async (openId: string, key: string) => { const profi
 
 export const appRouter = router({
   system: systemRouter,
+  ai: router({
+    chat: publicProcedure.input(z.object({ messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(4000) })).max(20) })).mutation(async ({ ctx, input }) => {
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "Sei Clarity, un assistente educativo per investitori retail. Rispondi in italiano, in modo chiaro e prudente. Puoi spiegare strumenti, rischi, portafogli e concetti finanziari, ma non dare consulenza personalizzata, non promettere rendimenti e non suggerire ordini. Distingui sempre tra dati, calcoli e scenari. Ricorda che le informazioni possono essere incomplete o non aggiornate." },
+          ...input.messages,
+        ],
+        maxTokens: 700,
+      });
+      const content = response.choices[0]?.message?.content;
+      const text = typeof content === "string" ? content : content?.map((part) => "text" in part ? part.text : "").join("") ?? "Non riesco a rispondere in questo momento.";
+      return { role: "assistant" as const, content: text, user: ctx.user?.name ?? "investitore" };
+    }),
+  }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }),

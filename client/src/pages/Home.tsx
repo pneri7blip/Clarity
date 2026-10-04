@@ -38,6 +38,7 @@ import { formatPercent } from "@shared/format";
 import { OnboardingDialog, type OnboardingProfile } from "@/components/OnboardingDialog";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { AIChatBox, type Message } from "@/components/AIChatBox";
 import {
   Area,
   AreaChart,
@@ -94,11 +95,11 @@ function StatCard({ label, value, trend, trendLabel, icon: Icon, tone = "default
   );
 }
 
-function SectionTitle({ eyebrow, title, action }: { eyebrow: string; title: string; action?: string }) {
+function SectionTitle({ eyebrow, title, action, onAction }: { eyebrow: string; title: string; action?: string; onAction?: () => void }) {
   return (
     <div className="section-heading">
       <div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div>
-      {action && <button className="text-button">{action}<ChevronRight size={15} /></button>}
+      {action && <button className="text-button" onClick={onAction}>{action}<ChevronRight size={15} /></button>}
     </div>
   );
 }
@@ -109,13 +110,25 @@ export default function Home() {
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showAgentDrawer, setShowAgentDrawer] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [selectedTicker, setSelectedTicker] = useState("VWCE");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [language, setLanguage] = useState<"it" | "en">("it");
   const [, setLocation] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { data: savedProfile } = trpc.profile.get.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60_000 });
   const saveProfile = trpc.profile.save.useMutation();
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const chatMutation = trpc.ai.chat.useMutation({ onSuccess: (response) => setChatMessages((current) => [...current, response]) });
+  const displayName = user?.name?.split(" ")[0] ?? "investitore";
+  const displayFullName = user?.name ?? "Profilo personale";
+  const initials = (user?.name ?? "CL").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+
+  const sendChatMessage = (content: string) => {
+    const nextMessages = [...chatMessages, { role: "user" as const, content }];
+    setChatMessages(nextMessages);
+    chatMutation.mutate({ messages: nextMessages.filter((message) => message.role !== "system").map((message) => ({ role: message.role as "user" | "assistant", content: message.content })) });
+  };
 
   useEffect(() => {
     setShowOnboarding(localStorage.getItem("clarity-onboarding-complete") !== "true");
@@ -157,17 +170,17 @@ export default function Home() {
           <div className="brand-name">Clarity<span>.</span></div>
           <button className="mobile-close" onClick={() => setShowMobileNav(false)} aria-label="Chiudi menu"><X size={20} /></button>
         </div>
-        <div className="workspace-switcher"><div className="workspace-avatar">G</div><div><span>Spazio personale</span><strong>Giulia Rossi</strong></div><ChevronDown size={15} /></div>
+          <div className="workspace-switcher"><div className="workspace-avatar">{initials.slice(0, 1)}</div><div><span>Spazio personale</span><strong>{displayFullName}</strong></div><ChevronDown size={15} /></div>
         <div className="nav-group-label">Il tuo spazio</div>
         <nav className="main-nav">
-          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); if (label === "Analisi") setLocation("/analysis"); if (label === "Piani") setLocation("/planner"); if (label === "Portafoglio") setLocation("/portfolio"); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
+          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? "active" : ""}`} onClick={() => { setActiveNav(label); setShowMobileNav(false); if (label === "Analisi" || label === "Mercati") setLocation("/analysis"); if (label === "Piani") setLocation("/planner"); if (label === "Portafoglio") setLocation("/portfolio"); }}><Icon size={18} strokeWidth={activeNav === label ? 2.3 : 1.8} /><span>{label}</span>{label === "Analisi" && <span className="nav-badge">3</span>}</button>)}
         </nav>
         <div className="nav-group-label spaced">Strumenti</div>
         <nav className="main-nav">
           <button className="nav-item" onClick={() => setShowAgentDrawer(true)}><Bot size={18} /><span>Agenti AI</span><span className="live-dot" /></button>
           <button className="nav-item" onClick={() => setLocation("/alerts")}><Bell size={18} /><span>Notifiche</span><span className="live-dot" /></button>
-          <button className="nav-item" onClick={() => setActiveNav("Report")}><FileText size={18} /><span>Report</span></button>
-          <button className="nav-item" onClick={() => setActiveNav("Impostazioni")}><Settings2 size={18} /><span>Impostazioni</span></button>
+          <button className="nav-item" onClick={() => setLocation("/analysis")}><FileText size={18} /><span>Report</span></button>
+          <button className="nav-item" onClick={() => setShowOnboarding(true)}><Settings2 size={18} /><span>Impostazioni</span></button>
         </nav>
         <div className="sidebar-bottom">
           <div className="trust-note"><ShieldCheck size={16} /><span>Dati protetti e privati</span></div>
@@ -182,15 +195,15 @@ export default function Home() {
           <div className="breadcrumbs"><span>Spazio personale</span><ChevronRight size={14} /><strong>{activeNav}</strong></div>
           <div className="topbar-actions">
             {showSearch ? <div className="search-wrap"><Search size={16} /><input autoFocus placeholder="Cerca un titolo, ETF o BTP" onBlur={() => setShowSearch(false)} /></div> : <button className="icon-button" onClick={() => setShowSearch(true)} aria-label="Cerca"><Search size={19} /></button>}
-            <button className="icon-button notification" aria-label="Notifiche"><Bell size={19} /><span /></button>
+            <button className="icon-button notification" onClick={() => setLocation("/alerts")} aria-label="Notifiche"><Bell size={19} /><span /></button>
             <div className="topbar-divider" />
-            <button className="language-toggle" onClick={toggleLanguage} aria-label="Cambia lingua">{language.toUpperCase()}</button><div className="avatar">GR</div>
+            <button className="language-toggle" onClick={toggleLanguage} aria-label="Cambia lingua">{language.toUpperCase()}</button><div className="avatar">{initials}</div>
           </div>
         </header>
 
         <div className="page-container">
           <section className="welcome-row">
-            <div><div className="welcome-kicker"><span className="status-pulse" /> {language === "it" ? "Mercati aperti · Giovedì 24 settembre 2026" : "Markets open · Thursday, September 24, 2026"}</div><h1>{language === "it" ? "Buongiorno, Giulia" : "Good morning, Giulia"} <span>✦</span></h1><p>{language === "it" ? "Il tuo patrimonio sta seguendo il piano. Ecco cosa merita attenzione oggi." : "Your portfolio is on track. Here is what deserves attention today."}</p></div>
+            <div><div className="welcome-kicker"><span className="status-pulse" /> {language === "it" ? "Mercati aperti · Giovedì 24 settembre 2026" : "Markets open · Thursday, September 24, 2026"}</div><h1>{language === "it" ? `Buongiorno, ${displayName}` : `Good morning, ${displayName}`} <span>✦</span></h1><p>{language === "it" ? "Il tuo patrimonio sta seguendo il piano. Ecco cosa merita attenzione oggi." : "Your portfolio is on track. Here is what deserves attention today."}</p></div>
             <button className="primary-button" onClick={() => setShowAgentDrawer(true)}><Sparkles size={17} /> {language === "it" ? "Chiedi ad Clarity" : "Ask Clarity"}</button>
           </section>
 
@@ -198,12 +211,12 @@ export default function Home() {
             <StatCard label="Patrimonio investito" value="€ 48.620,40" trend="+8,6%" trendLabel="quest'anno" icon={WalletCards} tone="green" />
             <StatCard label="Risultato di oggi" value="+€ 286,90" trend="+0,59%" trendLabel="vs. ieri" icon={TrendingUp} tone="blue" />
             <StatCard label="Liquidità disponibile" value="€ 6.240,00" trend="12,8%" trendLabel="del patrimonio" icon={CreditCard} />
-            <div className="risk-card"><div className="risk-card-top"><span className="eyebrow">Profilo Clarity</span><span className="risk-score">B</span></div><strong>Bilanciato</strong><div className="risk-scale"><span className="filled" /><span className="filled" /><span className="filled" /><span /><span /></div><div className="risk-foot"><span>Rischio 3/5</span><button onClick={() => setActiveNav("Piani")}>Modifica <ChevronRight size={13} /></button></div></div>
+            <div className="risk-card"><div className="risk-card-top"><span className="eyebrow">Profilo Clarity</span><span className="risk-score">B</span></div><strong>Bilanciato</strong><div className="risk-scale"><span className="filled" /><span className="filled" /><span className="filled" /><span /><span /></div><div className="risk-foot"><span>Rischio 3/5</span><button onClick={() => setLocation("/planner")}>Modifica <ChevronRight size={13} /></button></div></div>
           </section>
 
           <div className="main-grid">
-            <section className="panel performance-panel">
-              <SectionTitle eyebrow="Andamento portafoglio" title="La tua crescita" action="Vedi dettagli" />
+              <section className="panel performance-panel">
+              <SectionTitle eyebrow="Andamento portafoglio" title="La tua crescita" action="Vedi dettagli" onAction={() => setLocation("/portfolio")} />
               <div className="performance-metric"><strong>€ 48.620,40</strong><span className="trend-positive"><ArrowUpRight size={16} /> +€ 3.854,20 <small>(+8,6%)</small></span></div>
               <div className="chart-controls"><span>Valore normalizzato · ultimi 9 mesi</span><div className="range-tabs">{["1M", "9M", "1A", "Max"].map((item) => <button key={item} className={range === item ? "active" : ""} onClick={() => setRange(item)}>{item}</button>)}</div></div>
               <div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ top: 12, right: 4, left: -26, bottom: 0 }}><defs><linearGradient id="atlasGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8ed7bd" stopOpacity={0.4} /><stop offset="100%" stopColor="#8ed7bd" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e7ecea" strokeDasharray="3 3" /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#8b9895", fontSize: 11 }} dy={8} /><YAxis domain={[98, 132]} axisLine={false} tickLine={false} tick={{ fill: "#a0aaa8", fontSize: 11 }} tickFormatter={(value) => `${value}`} /><Tooltip contentStyle={{ border: "1px solid #dce7e2", borderRadius: 10, boxShadow: "0 8px 24px rgba(26,59,49,.10)", fontSize: 12 }} formatter={(value: number) => [`${value.toFixed(1)}%`, "Portafoglio"]} /><Area type="monotone" dataKey="value" stroke="#1a7860" strokeWidth={2.5} fill="url(#atlasGradient)" activeDot={{ r: 5, strokeWidth: 3, stroke: "#fff", fill: "#1a7860" }} /></AreaChart></ResponsiveContainer></div>
@@ -211,7 +224,7 @@ export default function Home() {
             </section>
 
             <section className="panel allocation-panel">
-              <SectionTitle eyebrow="Asset allocation" title="Dove sono i tuoi soldi" action="Ribilancia" />
+              <SectionTitle eyebrow="Asset allocation" title="Dove sono i tuoi soldi" action="Ribilancia" onAction={() => setLocation("/planner")} />
               <div className="allocation-content"><div className="donut" aria-label="Distribuzione portafoglio"><div><strong>48,6k</strong><span>totale</span></div></div><div className="allocation-legend"><div><span className="legend-dot equity" /><span>Azionario</span><strong>58%</strong></div><div><span className="legend-dot bonds" /><span>Obbligazionario</span><strong>27%</strong></div><div><span className="legend-dot cash" /><span>Liquidità</span><strong>13%</strong></div><div><span className="legend-dot other" /><span>Altro</span><strong>2%</strong></div></div></div>
               <div className="allocation-callout"><Zap size={15} /><span>Sei <strong>2,4%</strong> sotto il target azionario. Clarity suggerisce di non intervenire oggi.</span></div>
             </section>
@@ -219,7 +232,7 @@ export default function Home() {
 
           <div className="lower-grid">
             <section className="panel watchlist-panel">
-              <div className="section-heading"><div><span className="eyebrow">La tua lista</span><h2>Da tenere d'occhio</h2></div><div className="panel-actions"><button className="small-icon-button"><ListFilter size={16} /></button><button className="text-button">Gestisci <ChevronRight size={15} /></button></div></div>
+              <div className="section-heading"><div><span className="eyebrow">La tua lista</span><h2>Da tenere d'occhio</h2></div><div className="panel-actions"><button className="small-icon-button" onClick={() => setLocation("/analysis")} aria-label="Apri analisi"><ListFilter size={16} /></button><button className="text-button" onClick={() => setLocation("/analysis")}>Gestisci <ChevronRight size={15} /></button></div></div>
               <div className="watchlist-table"><div className="table-head"><span>Strumento</span><span>Ultimo</span><span>Oggi</span><span /></div>{watchlist.map((item) => <button className={`watch-row ${selectedTicker === item.ticker ? "selected" : ""}`} key={item.ticker} onClick={() => setSelectedTicker(item.ticker)}><div className="instrument"><span className={`ticker ${item.type === "ETF" ? "green" : item.type === "BOND" ? "yellow" : "dark"}`}>{item.ticker === "BTP 2037" ? "BTP" : item.ticker.slice(0, 2)}</span><span><strong>{item.ticker}</strong><small>{item.name}</small></span></div><strong>{item.price}</strong><span className={item.positive ? "trend-positive" : "trend-negative"}>{item.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}{item.change}</span><ChevronRight size={15} className="row-arrow" /></button>)}</div>
             </section>
 
@@ -236,7 +249,7 @@ export default function Home() {
         </div>
       </main>
 
-      {showAgentDrawer && <div className="drawer-backdrop" onClick={() => setShowAgentDrawer(false)}><aside className="agent-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-top"><div><span className="eyebrow">Clarity intelligence</span><h2>{language === "it" ? "Briefing del giorno" : "Daily briefing"}</h2></div><button className="small-icon-button" onClick={() => setShowAgentDrawer(false)}><X size={18} /></button></div><div className="briefing-date"><Clock3 size={14} /> {language === "it" ? "Aggiornato oggi alle 08:42 · 12 fonti analizzate" : "Updated today at 08:42 · 12 sources analysed"}</div><div className="briefing-highlight"><span className="agent-icon mint"><Globe2 size={18} /></span><div><strong>Scout mercati</strong><p>{language === "it" ? "I mercati europei aprono cauti dopo i dati sull'inflazione USA. Il quadro resta costruttivo per l'azionario globale, con volatilità in calo." : "European markets opened cautiously after US inflation data. The global equity outlook remains constructive, with volatility easing."}</p></div></div><div className="drawer-section"><span className="eyebrow">{language === "it" ? "Cosa merita attenzione" : "What deserves attention"}</span><div className="drawer-item"><span className="drawer-number">01</span><div><strong>{language === "it" ? "Obbligazioni governative" : "Government bonds"}</strong><p>{language === "it" ? "I rendimenti BTP a 10 anni sono scesi di 7 punti base. Il tuo 27% obbligazionario resta in linea con il piano." : "10-year BTP yields fell 7 basis points. Your 27% bond allocation remains aligned with the plan."}</p></div></div><div className="drawer-item"><span className="drawer-number">02</span><div><strong>{language === "it" ? "Concentrazione tech" : "Tech concentration"}</strong><p>{language === "it" ? "Microsoft e il tuo ETF globale portano l'esposizione tech al 31%. Nessuna urgenza: rivedila al prossimo versamento." : "Microsoft and your global ETF bring tech exposure to 31%. No urgency: review it at your next contribution."}</p></div></div></div><div className="drawer-question"><span className="agent-icon violet"><MessageCircle size={16} /></span><div><strong>{language === "it" ? "Hai una domanda?" : "Have a question?"}</strong><p>{language === "it" ? "Chiedi ad Clarity di spiegarti un titolo, un BTP o il tuo piano." : "Ask Clarity to explain a stock, a bond or your plan."}</p></div><ChevronRight size={16} /></div><button className="primary-button full" onClick={() => setShowAgentDrawer(false)}>{language === "it" ? "Inizia una conversazione" : "Start a conversation"} <MessageCircle size={16} /></button></aside></div>}
+          {showAgentDrawer && <div className="drawer-backdrop" onClick={() => setShowAgentDrawer(false)}><aside className="agent-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-top"><div><span className="eyebrow">Clarity intelligence</span><h2>{showChat ? "Conversazione con Clarity" : language === "it" ? "Briefing del giorno" : "Daily briefing"}</h2></div><button className="small-icon-button" onClick={() => setShowAgentDrawer(false)}><X size={18} /></button></div>{showChat ? <AIChatBox messages={chatMessages} onSendMessage={sendChatMessage} isLoading={chatMutation.isPending} height={430} placeholder="Chiedi a Clarity…" emptyStateMessage="Inizia una conversazione con Clarity" suggestedPrompts={["Spiegami il rischio di Microsoft", "Come posso diversificare meglio?", "Cosa significa un ETF globale?"]} /> : <><div className="briefing-date"><Clock3 size={14} /> {language === "it" ? "Aggiornato oggi · dati informativi" : "Updated today · informational data"}</div><div className="briefing-highlight"><span className="agent-icon mint"><Globe2 size={18} /></span><div><strong>Scout mercati</strong><p>{language === "it" ? "I mercati europei aprono cauti. Il quadro resta costruttivo per l'azionario globale, con volatilità da monitorare." : "European markets opened cautiously. The global equity outlook remains constructive, with volatility to monitor."}</p></div></div><div className="drawer-section"><span className="eyebrow">{language === "it" ? "Cosa merita attenzione" : "What deserves attention"}</span><div className="drawer-item"><span className="drawer-number">01</span><div><strong>{language === "it" ? "Obbligazioni governative" : "Government bonds"}</strong><p>{language === "it" ? "Usa Analisi per confrontare rendimento, rischio e orizzonte prima di prendere decisioni." : "Use Analysis to compare return, risk and horizon before making decisions."}</p></div></div><div className="drawer-item"><span className="drawer-number">02</span><div><strong>{language === "it" ? "Concentrazione tech" : "Tech concentration"}</strong><p>{language === "it" ? "Il portafoglio demo mostra una concentrazione tech: verifica i tuoi dati reali nella sezione Portafoglio." : "The demo portfolio shows tech concentration: check your real data in Portfolio."}</p></div></div></div><div className="drawer-question"><span className="agent-icon violet"><MessageCircle size={16} /></span><div><strong>{language === "it" ? "Hai una domanda?" : "Have a question?"}</strong><p>{language === "it" ? "Chiedi ad Clarity di spiegarti un titolo, un BTP o il tuo piano." : "Ask Clarity to explain a stock, a bond or your plan."}</p></div><ChevronRight size={16} /></div><button className="primary-button full" onClick={() => setShowChat(true)}>{language === "it" ? "Inizia una conversazione" : "Start a conversation"} <MessageCircle size={16} /></button></>}</aside></div>}
       {showOnboarding && <OnboardingDialog onComplete={completeOnboarding} onClose={() => { localStorage.setItem("clarity-onboarding-complete", "true"); setShowOnboarding(false); }} />}
     </div>
   );
