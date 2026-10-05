@@ -350,3 +350,29 @@ h1 span { color: #d2a365; font-size: .76em; vertical-align: 2px; margin-left: 4p
 .event-row small { display: block; font-size: 11px; color: #97a49f; margin-top: 4px; }
 .events-empty { color: #7f918a; font-size: 13px; line-height: 1.6; margin: 20px 0 4px; }
 @media (max-width: 760px) { .portfolio-card-actions { justify-content: flex-start; } .risk-metrics { grid-template-columns: 1fr; gap: 17px; } .insight-title { flex-direction: column; } }
+
+/* Portfolio history and transaction controls */
+.transaction-card,
+.history-card { margin-top: 18px; }
+.transaction-form { display: grid; grid-template-columns: 1.1fr .95fr 1fr 1fr 1.1fr auto; gap: 10px; align-items: center; margin-top: 16px; }
+.transaction-form input,
+.transaction-form select { min-width: 0; border: 1px solid #dce7e2; border-radius: 10px; background: #fbfdfc; color: #173c31; padding: 10px 11px; font: inherit; font-size: 13px; }
+.transaction-form input:focus,
+.transaction-form select:focus { outline: 2px solid rgba(26,120,96,.18); border-color: #68b89e; }
+.transaction-list { display: grid; gap: 0; margin-top: 16px; border-top: 1px solid #e8efec; }
+.transaction-row { display: grid; grid-template-columns: .8fr 1.3fr .9fr .8fr; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #eef3f0; font-size: 13px; color: #60736d; }
+.transaction-row strong { color: #173c31; }
+.transaction-row small { text-align: right; }
+.portfolio-history-chart { height: 240px; margin-top: 12px; }
+.chart-empty { height: 100%; display: grid; place-items: center; padding: 20px; text-align: center; color: #83928d; font-size: 13px; background: #fbfdfc; border-radius: 12px; }
+.portfolio-empty.compact { min-height: 180px; }
+.portfolio-card-head .analysis-source { color: #82918c; font-size: 12px; }
+@media (max-width: 900px) {
+  .transaction-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .transaction-form .primary-button { width: 100%; justify-content: center; }
+}
+@media (max-width: 560px) {
+  .transaction-form { grid-template-columns: 1fr; }
+  .transaction-row { grid-template-columns: 1fr 1fr; }
+  .transaction-row small { text-align: left; }
+}

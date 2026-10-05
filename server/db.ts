@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, investorProfiles, users, portfolioPositions, alerts, alertEvents } from "../drizzle/schema";
+import { InsertUser, investorProfiles, users, portfolioPositions, portfolioTransactions, portfolioSnapshots, alerts, alertEvents } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -35,6 +35,10 @@ export async function replacePositions(profileKey: string, positions: Array<{ sy
     else await db.insert(portfolioPositions).values({ profileKey, ...position });
   }
 }
+export async function listTransactions(profileKey: string) { const db = await getDb(); if (!db) return []; return db.select().from(portfolioTransactions).where(eq(portfolioTransactions.profileKey, profileKey)); }
+export async function createTransaction(transaction: { profileKey: string; symbol: string; side: string; quantity: string; price: string; currency: string; executedAt: Date }) { const db = await getDb(); if (!db) return; await db.insert(portfolioTransactions).values(transaction); }
+export async function listSnapshots(profileKey: string) { const db = await getDb(); if (!db) return []; return db.select().from(portfolioSnapshots).where(eq(portfolioSnapshots.profileKey, profileKey)); }
+export async function createSnapshot(snapshot: { profileKey: string; totalValue: string; source: string }) { const db = await getDb(); if (!db) return; await db.insert(portfolioSnapshots).values(snapshot); }
 export async function listAlerts(profileKey: string) { const db = await getDb(); if (!db) return []; return db.select().from(alerts).where(eq(alerts.profileKey, profileKey)); }
 export async function createAlert(alert: { profileKey: string; symbol: string; kind: string; threshold: string }) { const db = await getDb(); if (!db) return; await db.insert(alerts).values(alert); }
 export async function toggleAlert(profileKey: string, id: number, enabled: boolean) { const db = await getDb(); if (!db) return; await db.update(alerts).set({ enabled: enabled ? 1 : 0, updatedAt: new Date() }).where(and(eq(alerts.id, id), eq(alerts.profileKey, profileKey))); }

@@ -49,25 +49,6 @@ import {
   YAxis,
 } from "recharts";
 
-const performanceData = [
-  { month: "Gen", value: 100 },
-  { month: "Feb", value: 104.5 },
-  { month: "Mar", value: 102.8 },
-  { month: "Apr", value: 108.6 },
-  { month: "Mag", value: 111.4 },
-  { month: "Giu", value: 109.7 },
-  { month: "Lug", value: 115.8 },
-  { month: "Ago", value: 117.6 },
-  { month: "Set", value: 121.9 },
-];
-
-const watchlist = [
-  { ticker: "VWCE", name: "Vanguard FTSE All-World", price: "€ 124,86", change: "+0,84%", positive: true, type: "ETF" },
-  { ticker: "MSFT", name: "Microsoft Corporation", price: "$ 509,90", change: "+1,72%", positive: true, type: "USA" },
-  { ticker: "ENI", name: "Eni S.p.A.", price: "€ 14,38", change: "−0,41%", positive: false, type: "ITA" },
-  { ticker: "BTP 2037", name: "Buoni del Tesoro Poliennali", price: "98,42", change: "+0,18%", positive: true, type: "BOND" },
-];
-
 const navItems = [
   { label: "Panoramica", icon: LayoutDashboard },
   { label: "Analisi", icon: LineChart },
@@ -117,12 +98,23 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { data: savedProfile } = trpc.profile.get.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60_000 });
+  const watchlistQuery = trpc.market.watchlist.useQuery(undefined, { staleTime: 60_000, refetchOnWindowFocus: false });
+  const dashboardInsightsQuery = trpc.portfolio.insights.useQuery({ profileKey: savedProfile?.profileKey ?? "" }, { enabled: isAuthenticated && Boolean(savedProfile?.profileKey), staleTime: 60_000 });
+  const dashboardHistoryQuery = trpc.portfolio.history.useQuery({ profileKey: savedProfile?.profileKey ?? "" }, { enabled: isAuthenticated && Boolean(savedProfile?.profileKey), staleTime: 60_000 });
   const saveProfile = trpc.profile.save.useMutation();
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const chatMutation = trpc.ai.chat.useMutation({ onSuccess: (response) => setChatMessages((current) => [...current, response]) });
   const displayName = user?.name?.split(" ")[0] ?? "investitore";
   const displayFullName = user?.name ?? "Profilo personale";
   const initials = (user?.name ?? "CL").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const watchlist = watchlistQuery.data?.map((item) => ({ ticker: item.symbol, name: item.name, price: item.available ? `${item.currency === "USD" ? "$" : "€"} ${item.price.toFixed(2)}` : "—", change: item.available ? `${item.changePct >= 0 ? "+" : ""}${item.changePct.toFixed(2)}%` : "N/D", positive: item.changePct >= 0, type: item.type })) ?? [];
+  const dashboardInsights = dashboardInsightsQuery.data;
+  const dashboardValue = dashboardInsights?.currentValue ?? 0;
+  const dashboardPnl = dashboardInsights?.pnl ?? 0;
+  const dashboardHistory = dashboardHistoryQuery.data ?? [];
+  const bondValue = dashboardInsights?.holdings.filter((item) => item.symbol.toUpperCase().startsWith("BTP")).reduce((sum, item) => sum + item.currentValue, 0) ?? 0;
+  const equityPct = dashboardValue ? Math.round(((dashboardValue - bondValue) / dashboardValue) * 100) : 0;
+  const bondPct = dashboardValue ? Math.round((bondValue / dashboardValue) * 100) : 0;
 
   const sendChatMessage = (content: string) => {
     const nextMessages = [...chatMessages, { role: "user" as const, content }];
@@ -157,10 +149,12 @@ export default function Home() {
   };
 
   const chartData = useMemo(() => {
-    if (range === "1M") return performanceData.slice(-3);
-    if (range === "1A") return [...performanceData, { month: "Ott", value: 123.2 }, { month: "Nov", value: 126.4 }, { month: "Dic", value: 129.8 }];
-    return performanceData;
-  }, [range]);
+    const points = dashboardHistory.map((item) => ({ month: new Date(item.capturedAt).toLocaleDateString("it-IT", { month: "short", day: "2-digit" }), value: Number(item.totalValue) }));
+    if (range === "1M") return points.slice(-3);
+    if (range === "1A") return points.slice(-12);
+    return points;
+  }, [dashboardHistory, range]);
+  const money = (value: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(value);
 
   return (
     <div className="atlas-shell">
@@ -208,32 +202,32 @@ export default function Home() {
           </section>
 
           <section className="stats-grid">
-            <StatCard label="Patrimonio investito" value="€ 48.620,40" trend="+8,6%" trendLabel="quest'anno" icon={WalletCards} tone="green" />
-            <StatCard label="Risultato di oggi" value="+€ 286,90" trend="+0,59%" trendLabel="vs. ieri" icon={TrendingUp} tone="blue" />
-            <StatCard label="Liquidità disponibile" value="€ 6.240,00" trend="12,8%" trendLabel="del patrimonio" icon={CreditCard} />
-            <div className="risk-card"><div className="risk-card-top"><span className="eyebrow">Profilo Clarity</span><span className="risk-score">B</span></div><strong>Bilanciato</strong><div className="risk-scale"><span className="filled" /><span className="filled" /><span className="filled" /><span /><span /></div><div className="risk-foot"><span>Rischio 3/5</span><button onClick={() => setLocation("/planner")}>Modifica <ChevronRight size={13} /></button></div></div>
+            <StatCard label="Patrimonio investito" value={dashboardValue ? money(dashboardValue) : "—"} trend={dashboardValue ? `${dashboardPnl >= 0 ? "+" : ""}${money(dashboardPnl)}` : "—"} trendLabel={dashboardValue ? "vs prezzo medio" : "Importa un portafoglio"} icon={WalletCards} tone="green" />
+            <StatCard label="Risultato di oggi" value={dashboardValue ? `${dashboardPnl >= 0 ? "+" : ""}${money(dashboardPnl)}` : "—"} trend={dashboardValue ? `${dashboardInsights?.liveCount ?? 0}/${dashboardInsights?.totalCount ?? 0}` : "—"} trendLabel={dashboardValue ? "quote live" : "Nessun dato"} icon={TrendingUp} tone="blue" />
+            <StatCard label="Liquidità disponibile" value="—" trend="—" trendLabel="Aggiungi un saldo cash" icon={CreditCard} />
+            <div className="risk-card"><div className="risk-card-top"><span className="eyebrow">Profilo Clarity</span><span className="risk-score">{savedProfile ? "✓" : "—"}</span></div><strong>{savedProfile?.risk ?? "Profilo non configurato"}</strong><div className="risk-scale"><span className={savedProfile ? "filled" : ""} /><span className={savedProfile ? "filled" : ""} /><span /><span /><span /></div><div className="risk-foot"><span>{savedProfile ? "Profilo salvato" : "Completa onboarding"}</span><button onClick={() => setLocation("/planner")}>Modifica <ChevronRight size={13} /></button></div></div>
           </section>
 
           <div className="main-grid">
               <section className="panel performance-panel">
               <SectionTitle eyebrow="Andamento portafoglio" title="La tua crescita" action="Vedi dettagli" onAction={() => setLocation("/portfolio")} />
-              <div className="performance-metric"><strong>€ 48.620,40</strong><span className="trend-positive"><ArrowUpRight size={16} /> +€ 3.854,20 <small>(+8,6%)</small></span></div>
+              <div className="performance-metric"><strong>{dashboardValue ? money(dashboardValue) : "—"}</strong><span className={dashboardPnl >= 0 ? "trend-positive" : "trend-negative"}>{dashboardValue ? <><ArrowUpRight size={16} /> {dashboardPnl >= 0 ? "+" : ""}{money(dashboardPnl)} <small>vs prezzo medio</small></> : "Nessuno snapshot salvato"}</span></div>
               <div className="chart-controls"><span>Valore normalizzato · ultimi 9 mesi</span><div className="range-tabs">{["1M", "9M", "1A", "Max"].map((item) => <button key={item} className={range === item ? "active" : ""} onClick={() => setRange(item)}>{item}</button>)}</div></div>
-              <div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ top: 12, right: 4, left: -26, bottom: 0 }}><defs><linearGradient id="atlasGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8ed7bd" stopOpacity={0.4} /><stop offset="100%" stopColor="#8ed7bd" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e7ecea" strokeDasharray="3 3" /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#8b9895", fontSize: 11 }} dy={8} /><YAxis domain={[98, 132]} axisLine={false} tickLine={false} tick={{ fill: "#a0aaa8", fontSize: 11 }} tickFormatter={(value) => `${value}`} /><Tooltip contentStyle={{ border: "1px solid #dce7e2", borderRadius: 10, boxShadow: "0 8px 24px rgba(26,59,49,.10)", fontSize: 12 }} formatter={(value: number) => [`${value.toFixed(1)}%`, "Portafoglio"]} /><Area type="monotone" dataKey="value" stroke="#1a7860" strokeWidth={2.5} fill="url(#atlasGradient)" activeDot={{ r: 5, strokeWidth: 3, stroke: "#fff", fill: "#1a7860" }} /></AreaChart></ResponsiveContainer></div>
+              <div className="chart-wrap">{chartData.length > 1 ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ top: 12, right: 4, left: -26, bottom: 0 }}><defs><linearGradient id="atlasGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8ed7bd" stopOpacity={0.4} /><stop offset="100%" stopColor="#8ed7bd" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e7ecea" strokeDasharray="3 3" /><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#8b9895", fontSize: 11 }} dy={8} /><YAxis domain={["dataMin", "dataMax"]} axisLine={false} tickLine={false} tick={{ fill: "#a0aaa8", fontSize: 11 }} tickFormatter={(value) => money(Number(value))} /><Tooltip contentStyle={{ border: "1px solid #dce7e2", borderRadius: 10, boxShadow: "0 8px 24px rgba(26,59,49,.10)", fontSize: 12 }} formatter={(value: number) => [money(value), "Valore"]} /><Area type="monotone" dataKey="value" stroke="#1a7860" strokeWidth={2.5} fill="url(#atlasGradient)" activeDot={{ r: 5, strokeWidth: 3, stroke: "#fff", fill: "#1a7860" }} /></AreaChart></ResponsiveContainer> : <div className="chart-empty">Salva almeno due snapshot dal Portafoglio per vedere qui la performance storica.</div>}</div>
               <div className="chart-foot"><span><span className="legend-line" /> Portafoglio</span><span><span className="legend-dash" /> Benchmark globale <em>+7,2%</em></span></div>
             </section>
 
             <section className="panel allocation-panel">
               <SectionTitle eyebrow="Asset allocation" title="Dove sono i tuoi soldi" action="Ribilancia" onAction={() => setLocation("/planner")} />
-              <div className="allocation-content"><div className="donut" aria-label="Distribuzione portafoglio"><div><strong>48,6k</strong><span>totale</span></div></div><div className="allocation-legend"><div><span className="legend-dot equity" /><span>Azionario</span><strong>58%</strong></div><div><span className="legend-dot bonds" /><span>Obbligazionario</span><strong>27%</strong></div><div><span className="legend-dot cash" /><span>Liquidità</span><strong>13%</strong></div><div><span className="legend-dot other" /><span>Altro</span><strong>2%</strong></div></div></div>
-              <div className="allocation-callout"><Zap size={15} /><span>Sei <strong>2,4%</strong> sotto il target azionario. Clarity suggerisce di non intervenire oggi.</span></div>
+              <div className="allocation-content"><div className="donut" aria-label="Distribuzione portafoglio"><div><strong>{dashboardValue ? money(dashboardValue) : "—"}</strong><span>totale</span></div></div><div className="allocation-legend"><div><span className="legend-dot equity" /><span>Azionario</span><strong>{dashboardValue ? `${equityPct}%` : "—"}</strong></div><div><span className="legend-dot bonds" /><span>Obbligazionario</span><strong>{dashboardValue ? `${bondPct}%` : "—"}</strong></div><div><span className="legend-dot cash" /><span>Liquidità</span><strong>—</strong></div><div><span className="legend-dot other" /><span>Altro</span><strong>—</strong></div></div></div>
+              <div className="allocation-callout"><Zap size={15} /><span>{dashboardValue ? "Allocazione calcolata dalle posizioni importate. Aggiungi categorie e liquidità per una vista più completa." : "Importa un portafoglio per calcolare asset allocation e concentrazione."}</span></div>
             </section>
           </div>
 
           <div className="lower-grid">
             <section className="panel watchlist-panel">
               <div className="section-heading"><div><span className="eyebrow">La tua lista</span><h2>Da tenere d'occhio</h2></div><div className="panel-actions"><button className="small-icon-button" onClick={() => setLocation("/analysis")} aria-label="Apri analisi"><ListFilter size={16} /></button><button className="text-button" onClick={() => setLocation("/analysis")}>Gestisci <ChevronRight size={15} /></button></div></div>
-              <div className="watchlist-table"><div className="table-head"><span>Strumento</span><span>Ultimo</span><span>Oggi</span><span /></div>{watchlist.map((item) => <button className={`watch-row ${selectedTicker === item.ticker ? "selected" : ""}`} key={item.ticker} onClick={() => setSelectedTicker(item.ticker)}><div className="instrument"><span className={`ticker ${item.type === "ETF" ? "green" : item.type === "BOND" ? "yellow" : "dark"}`}>{item.ticker === "BTP 2037" ? "BTP" : item.ticker.slice(0, 2)}</span><span><strong>{item.ticker}</strong><small>{item.name}</small></span></div><strong>{item.price}</strong><span className={item.positive ? "trend-positive" : "trend-negative"}>{item.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}{item.change}</span><ChevronRight size={15} className="row-arrow" /></button>)}</div>
+              <div className="watchlist-table"><div className="table-head"><span>Strumento</span><span>Ultimo</span><span>Oggi</span><span /></div>{watchlist.map((item) => <button className={`watch-row ${selectedTicker === item.ticker ? "selected" : ""}`} key={item.ticker} onClick={() => { setSelectedTicker(item.ticker); setLocation(`/analysis?symbol=${encodeURIComponent(item.ticker)}`); }}><div className="instrument"><span className={`ticker ${item.type === "ETF" ? "green" : item.type === "BOND" ? "yellow" : "dark"}`}>{item.ticker === "BTP 2037" ? "BTP" : item.ticker.slice(0, 2)}</span><span><strong>{item.ticker}</strong><small>{item.name}</small></span></div><strong>{item.price}</strong><span className={item.positive ? "trend-positive" : "trend-negative"}>{item.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}{item.change}</span><ChevronRight size={15} className="row-arrow" /></button>)}</div>
             </section>
 
             <section className="panel agents-panel">
@@ -244,8 +238,8 @@ export default function Home() {
             </section>
           </div>
 
-          <section className="insight-banner"><div className="insight-symbol"><Sparkles size={19} /></div><div><span className="eyebrow">Insight del giorno · Analista titoli</span><strong>Il tuo portafoglio è ben diversificato, ma il 31% è esposto al settore tech.</strong><p>Scopri come questa concentrazione può influenzare il rischio nei prossimi 12 mesi.</p></div><button className="secondary-button" onClick={() => setShowAgentDrawer(true)}>Esplora insight <ChevronRight size={15} /></button></section>
-          <div className="disclaimer"><LockKeyhole size={13} /> Clarity offre informazioni e simulazioni educative, non consulenza finanziaria personalizzata. I dati mostrati sono demo.</div>
+          <section className="insight-banner"><div className="insight-symbol"><Sparkles size={19} /></div><div><span className="eyebrow">Insight del giorno · Analista titoli</span><strong>{dashboardInsights ? dashboardInsights.riskLabel : "Importa un portafoglio per attivare gli insight"}</strong><p>{dashboardInsights ? `Diversificazione calcolata: ${dashboardInsights.diversificationScore}/100. Verifica i dettagli prima di prendere decisioni.` : "Clarity userà le tue posizioni per calcolare concentrazione, copertura dati e segnali di rischio."}</p></div><button className="secondary-button" onClick={() => setLocation("/portfolio")}>Esplora insight <ChevronRight size={15} /></button></section>
+          <div className="disclaimer"><LockKeyhole size={13} /> Clarity offre informazioni educative, non consulenza finanziaria personalizzata. Le quotazioni watchlist sono live quando disponibili; i dati di portafoglio dipendono dal tuo profilo e dagli snapshot salvati.</div>
         </div>
       </main>
 

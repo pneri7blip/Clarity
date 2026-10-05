@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { callDataApi } from "./_core/dataApi";
-import { createAlert, getInvestorProfile, getInvestorProfileByKey, listAlertEvents, listAlerts, listInvestorProfiles, listPositions, replacePositions, toggleAlert, upsertInvestorProfile } from "./db";
+import { createAlert, createSnapshot, createTransaction, getInvestorProfile, getInvestorProfileByKey, listAlertEvents, listAlerts, listInvestorProfiles, listPositions, listSnapshots, listTransactions, replacePositions, toggleAlert, upsertInvestorProfile } from "./db";
 import { fetchLiveQuote, evaluateAlertsForProfile } from "./alertMonitor";
 import { invokeLLM } from "./_core/llm";
 import { COOKIE_NAME } from "@shared/const";
@@ -40,6 +40,10 @@ export const appRouter = router({
   portfolio: router({
     list: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return listPositions(input.profileKey); }),
     import: protectedProcedure.input(z.object({ profileKey, positions: z.array(z.object({ symbol: z.string().min(1), quantity: z.string().min(1), averagePrice: z.string().min(1), currency: z.string().min(1).max(8) })).max(200) })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await replacePositions(input.profileKey, input.positions); return { success: true, count: input.positions.length } as const; }),
+    transactions: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return listTransactions(input.profileKey); }),
+    addTransaction: protectedProcedure.input(z.object({ profileKey, symbol: z.string().min(1), side: z.enum(["buy", "sell"]), quantity: z.string().min(1), price: z.string().min(1), currency: z.string().min(1).max(8), executedAt: z.coerce.date() })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await createTransaction(input); return { success: true } as const; }),
+    history: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return listSnapshots(input.profileKey); }),
+    snapshot: protectedProcedure.input(z.object({ profileKey, totalValue: z.string().min(1), source: z.string().default("manual") })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await createSnapshot(input); return { success: true } as const; }),
     insights: protectedProcedure.input(z.object({ profileKey })).query(async ({ ctx, input }) => {
       await requireOwnedProfile(ctx.user.openId, input.profileKey);
       const positions = await listPositions(input.profileKey);
@@ -72,6 +76,21 @@ export const appRouter = router({
   market: router({
     quote: publicProcedure.input(quoteInput).query(async ({ input }) => { try { const response = await callDataApi("YahooFinance/get_stock_chart", { query: { symbol: input.symbol, region: input.region, lang: "en-US", interval: "1d", range: "5d", includeAdjustedClose: "true", includePrePost: "false" } }) as any; const meta = response?.chart?.result?.[0]?.meta ?? {}; const price = Number(meta.regularMarketPrice ?? meta.previousClose ?? 0); const previous = Number(meta.previousClose ?? price); return { available: price > 0, price, previous, changePct: previous ? ((price - previous) / previous) * 100 : 0, currency: meta.currency ?? "", exchange: meta.exchangeName ?? "", asOf: Number(meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000, source: "Yahoo Finance" }; } catch (error) { console.warn("[Market] Quote unavailable, using demo fallback", error); return { available: false, price: 0, previous: 0, changePct: 0, currency: "", exchange: "", asOf: Date.now(), source: "Demo fallback" }; } }),
     fundamentals: publicProcedure.input(quoteInput).query(async ({ input }) => { try { if (input.symbol === "MSFT") { const ratios = await callDataApi("Massive/get_financial_ratios", { query: { tickers: "MSFT", limit: "1", sort: "period_end.desc" } }) as any; const row = ratios?.results?.[0] ?? ratios?.data?.[0] ?? {}; return { available: true, source: "Massive", asOf: row.period_end ?? new Date().toISOString(), fields: { pe: row.price_to_earnings ?? row.pe_ratio ?? null, pb: row.price_to_book ?? row.pb_ratio ?? null, roe: row.return_on_equity ?? null, roa: row.return_on_assets ?? null, evEbitda: row.enterprise_value_to_ebitda ?? null } }; } if (input.symbol === "ENI.MI") { const profile = await callDataApi("YahooFinance/get_stock_profile", { query: { symbol: "ENI.MI", region: "IT", lang: "it-IT" } }) as any; const data = profile?.quoteSummary?.result?.[0]?.summaryProfile ?? {}; return { available: true, source: "Yahoo Finance", asOf: new Date().toISOString(), fields: { sector: data.sector ?? null, industry: data.industry ?? null, employees: data.fullTimeEmployees ?? null, description: data.longBusinessSummary ?? null } }; } return { available: false, source: "Demo fallback", asOf: new Date().toISOString(), fields: {} }; } catch (error) { console.warn("[Market] Fundamentals unavailable, using demo fallback", error); return { available: false, source: "Demo fallback", asOf: new Date().toISOString(), fields: {} }; } }),
+    watchlist: publicProcedure.query(async () => {
+      const instruments = [{ symbol: "VWCE", yahooSymbol: "VWCE.DE", name: "Vanguard FTSE All-World", type: "ETF", currency: "EUR" }, { symbol: "MSFT", yahooSymbol: "MSFT", name: "Microsoft Corporation", type: "USA", currency: "USD" }, { symbol: "ENI", yahooSymbol: "ENI.MI", name: "Eni S.p.A.", type: "ITA", currency: "EUR" }, { symbol: "BTP 2037", yahooSymbol: "BTP-2037", name: "Buoni del Tesoro Poliennali", type: "BOND", currency: "EUR" }];
+      const result = [];
+      for (const instrument of instruments) {
+        if (result.length) await new Promise((resolve) => setTimeout(resolve, 600));
+        try {
+          const response = await callDataApi("YahooFinance/get_stock_chart", { query: { symbol: instrument.yahooSymbol, region: instrument.currency === "EUR" ? "EU" : "US", lang: "en-US", interval: "1d", range: "5d", includeAdjustedClose: "true", includePrePost: "false" } }) as any;
+          const meta = response?.chart?.result?.[0]?.meta ?? {};
+          const price = Number(meta.regularMarketPrice ?? meta.previousClose ?? 0);
+          const previous = Number(meta.previousClose ?? price);
+          result.push({ ...instrument, price, previous, available: price > 0, changePct: previous ? ((price - previous) / previous) * 100 : 0, asOf: Number(meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000, source: "Yahoo Finance" });
+        } catch { result.push({ ...instrument, price: 0, previous: 0, available: false, changePct: 0, asOf: Date.now(), source: "Demo fallback" }); }
+      }
+      return result;
+    }),
   }),
 });
 

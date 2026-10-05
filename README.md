@@ -23,6 +23,7 @@ The current MVP focuses on three connected experiences:
 - **Portfolio overview:** a dashboard for performance, allocation, watchlists, and daily market context.
 - **Instrument analysis:** a focused research workspace for ETFs, equities, and government bonds with a score, key metrics, plain-language thesis, and risk framing.
 - **Private portfolio workspace:** authenticated investor profiles, CSV import, live quote enrichment, portfolio P&L, concentration metrics, and alert history.
+- **Portfolio history:** profile-scoped buy/sell transaction log, manual valuation snapshots, and performance chart built from the user's recorded history.
 
 The interface is intentionally designed for a retail audience: dense enough to be useful, but structured around explanations rather than financial jargon.
 
@@ -46,6 +47,8 @@ The interface is intentionally designed for a retail audience: dense enough to b
 - Mobile navigation and responsive layouts.
 - Authenticated multi-profile portfolio area with CSV import (`symbol,quantity,averagePrice,currency`).
 - Live valuation enrichment through a server-side Yahoo Finance adapter, with source/timestamp and transparent fallback states.
+- Live watchlist quotes for VWCE, Microsoft, Eni, and a transparent unavailable state for unsupported BTP pricing.
+- Dashboard portfolio cards and allocation are empty-state aware: they use imported holdings and saved snapshots instead of hardcoded sample balances.
 - Deterministic diversification and concentration insights based on holding weights, plus price-threshold alert rules.
 - Alert event history with duplicate suppression and a protected scheduled-monitor endpoint ready for deployment-managed heartbeat checks.
 - Vitest coverage for shared formatting logic and existing authentication behavior.

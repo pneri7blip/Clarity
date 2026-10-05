@@ -34,6 +34,24 @@ export const portfolioPositions = mysqlTable("portfolio_positions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+export const portfolioTransactions = mysqlTable("portfolio_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  profileKey: varchar("profileKey", { length: 120 }).notNull(),
+  symbol: varchar("symbol", { length: 32 }).notNull(),
+  side: varchar("side", { length: 16 }).notNull(),
+  quantity: decimal("quantity", { precision: 18, scale: 6 }).notNull(),
+  price: decimal("price", { precision: 18, scale: 6 }).notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("EUR"),
+  executedAt: timestamp("executedAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export const portfolioSnapshots = mysqlTable("portfolio_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  profileKey: varchar("profileKey", { length: 120 }).notNull(),
+  totalValue: decimal("totalValue", { precision: 18, scale: 2 }).notNull(),
+  capturedAt: timestamp("capturedAt").defaultNow().notNull(),
+  source: varchar("source", { length: 64 }).notNull().default("manual"),
+});
 
 export const alerts = mysqlTable("alerts", {
   id: int("id").autoincrement().primaryKey(),
@@ -61,5 +79,7 @@ export type InsertUser = typeof users.$inferInsert;
 export type InvestorProfile = typeof investorProfiles.$inferSelect;
 export type InsertInvestorProfile = typeof investorProfiles.$inferInsert;
 export type PortfolioPosition = typeof portfolioPositions.$inferSelect;
+export type PortfolioTransaction = typeof portfolioTransactions.$inferSelect;
+export type PortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type AlertEvent = typeof alertEvents.$inferSelect;
