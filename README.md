@@ -26,6 +26,7 @@ The current MVP focuses on three connected experiences:
 - **Instrument analysis:** a focused research workspace for ETFs, equities, and government bonds with a score, key metrics, plain-language thesis, and risk framing.
 - **Private portfolio workspace:** authenticated investor profiles, CSV import, live quote enrichment, portfolio P&L, concentration metrics, and alert history.
 - **Portfolio history:** profile-scoped buy/sell transaction log, manual valuation snapshots, and performance chart built from the user's recorded history.
+- **Railway-ready market data:** current quotes use a server-side Yahoo Finance adapter with short-lived caching, so the watchlist, portfolio valuation, and price alerts do not depend on Manus gateway variables.
 
 The interface is intentionally designed for a retail audience: dense enough to be useful, but structured around explanations rather than financial jargon.
 

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { callDataApi } from "./_core/dataApi";
 import { createAlert, createSnapshot, createTransaction, getInvestorProfile, getInvestorProfileByKey, listAlertEvents, listAlerts, listInvestorProfiles, listPositions, listSnapshots, listTransactions, replacePositions, toggleAlert, upsertInvestorProfile } from "./db";
 import { fetchLiveQuote, evaluateAlertsForProfile } from "./alertMonitor";
+import { fetchYahooQuote } from "./marketData";
 import { invokeLLM } from "./_core/llm";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -74,7 +75,7 @@ export const appRouter = router({
     check: protectedProcedure.input(z.object({ profileKey })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return evaluateAlertsForProfile(input.profileKey); }),
   }),
   market: router({
-    quote: publicProcedure.input(quoteInput).query(async ({ input }) => { try { const response = await callDataApi("YahooFinance/get_stock_chart", { query: { symbol: input.symbol, region: input.region, lang: "en-US", interval: "1d", range: "5d", includeAdjustedClose: "true", includePrePost: "false" } }) as any; const meta = response?.chart?.result?.[0]?.meta ?? {}; const price = Number(meta.regularMarketPrice ?? meta.previousClose ?? 0); const previous = Number(meta.previousClose ?? price); return { available: price > 0, price, previous, changePct: previous ? ((price - previous) / previous) * 100 : 0, currency: meta.currency ?? "", exchange: meta.exchangeName ?? "", asOf: Number(meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000, source: "Yahoo Finance" }; } catch (error) { console.warn("[Market] Quote unavailable, using demo fallback", error); return { available: false, price: 0, previous: 0, changePct: 0, currency: "", exchange: "", asOf: Date.now(), source: "Demo fallback" }; } }),
+    quote: publicProcedure.input(quoteInput).query(({ input }) => fetchYahooQuote(input.symbol)),
     fundamentals: publicProcedure.input(quoteInput).query(async ({ input }) => { try { if (input.symbol === "MSFT") { const ratios = await callDataApi("Massive/get_financial_ratios", { query: { tickers: "MSFT", limit: "1", sort: "period_end.desc" } }) as any; const row = ratios?.results?.[0] ?? ratios?.data?.[0] ?? {}; return { available: true, source: "Massive", asOf: row.period_end ?? new Date().toISOString(), fields: { pe: row.price_to_earnings ?? row.pe_ratio ?? null, pb: row.price_to_book ?? row.pb_ratio ?? null, roe: row.return_on_equity ?? null, roa: row.return_on_assets ?? null, evEbitda: row.enterprise_value_to_ebitda ?? null } }; } if (input.symbol === "ENI.MI") { const profile = await callDataApi("YahooFinance/get_stock_profile", { query: { symbol: "ENI.MI", region: "IT", lang: "it-IT" } }) as any; const data = profile?.quoteSummary?.result?.[0]?.summaryProfile ?? {}; return { available: true, source: "Yahoo Finance", asOf: new Date().toISOString(), fields: { sector: data.sector ?? null, industry: data.industry ?? null, employees: data.fullTimeEmployees ?? null, description: data.longBusinessSummary ?? null } }; } return { available: false, source: "Demo fallback", asOf: new Date().toISOString(), fields: {} }; } catch (error) { console.warn("[Market] Fundamentals unavailable, using demo fallback", error); return { available: false, source: "Demo fallback", asOf: new Date().toISOString(), fields: {} }; } }),
     watchlist: publicProcedure.query(async () => {
       const instruments = [{ symbol: "VWCE", yahooSymbol: "VWCE.DE", name: "Vanguard FTSE All-World", type: "ETF", currency: "EUR" }, { symbol: "MSFT", yahooSymbol: "MSFT", name: "Microsoft Corporation", type: "USA", currency: "USD" }, { symbol: "ENI", yahooSymbol: "ENI.MI", name: "Eni S.p.A.", type: "ITA", currency: "EUR" }, { symbol: "BTP 2037", yahooSymbol: "BTP-2037", name: "Buoni del Tesoro Poliennali", type: "BOND", currency: "EUR" }];
@@ -82,11 +83,8 @@ export const appRouter = router({
       for (const instrument of instruments) {
         if (result.length) await new Promise((resolve) => setTimeout(resolve, 600));
         try {
-          const response = await callDataApi("YahooFinance/get_stock_chart", { query: { symbol: instrument.yahooSymbol, region: instrument.currency === "EUR" ? "EU" : "US", lang: "en-US", interval: "1d", range: "5d", includeAdjustedClose: "true", includePrePost: "false" } }) as any;
-          const meta = response?.chart?.result?.[0]?.meta ?? {};
-          const price = Number(meta.regularMarketPrice ?? meta.previousClose ?? 0);
-          const previous = Number(meta.previousClose ?? price);
-          result.push({ ...instrument, price, previous, available: price > 0, changePct: previous ? ((price - previous) / previous) * 100 : 0, asOf: Number(meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000, source: "Yahoo Finance" });
+          const quote = await fetchYahooQuote(instrument.yahooSymbol);
+          result.push({ ...instrument, price: quote.price, previous: quote.previous, available: quote.available, changePct: quote.changePct, asOf: quote.asOf, source: quote.source });
         } catch { result.push({ ...instrument, price: 0, previous: 0, available: false, changePct: 0, asOf: Date.now(), source: "Demo fallback" }); }
       }
       return result;

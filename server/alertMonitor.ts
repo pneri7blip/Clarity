@@ -1,23 +1,13 @@
-import { callDataApi } from "./_core/dataApi";
 import { createAlertEvent, listAlertEvents, listAllEnabledAlerts, listAlerts } from "./db";
+import { fetchYahooQuote } from "./marketData";
 
 type AlertRow = { id: number; profileKey: string; symbol: string; kind: string; threshold: string | number; enabled: number };
 
 type Quote = { price: number; previous: number; available: boolean; asOf: number; source: string };
 
 export async function fetchLiveQuote(symbol: string): Promise<Quote> {
-  try {
-    const response = await callDataApi("YahooFinance/get_stock_chart", {
-      query: { symbol, region: symbol.includes(".") ? "IT" : "US", lang: "en-US", interval: "1d", range: "5d", includeAdjustedClose: "true", includePrePost: "false" },
-    }) as any;
-    const meta = response?.chart?.result?.[0]?.meta ?? {};
-    const price = Number(meta.regularMarketPrice ?? meta.previousClose ?? 0);
-    const previous = Number(meta.previousClose ?? price);
-    return { available: price > 0, price, previous, asOf: Number(meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000, source: "Yahoo Finance" };
-  } catch (error) {
-    console.warn(`[Market] Quote unavailable for ${symbol}`, error);
-    return { available: false, price: 0, previous: 0, asOf: Date.now(), source: "Demo fallback" };
-  }
+  const quote = await fetchYahooQuote(symbol);
+  return { available: quote.available, price: quote.price, previous: quote.previous, asOf: quote.asOf, source: quote.source };
 }
 
 function isTriggered(alert: AlertRow, price: number) {
