@@ -8,6 +8,8 @@
 
 The public Railway deployment is an educational MVP: it supports research, planning, authenticated portfolio tracking, CSV import, live quote enrichment, and profile-scoped alerts. It does **not** connect to brokers, place trades, or provide regulated financial advice.
 
+For Railway deployment, use `pnpm run build` as the build command, `pnpm start` as the start command, and `/health` as the healthcheck path. The server listens on Railway's injected `PORT` and binds to `0.0.0.0` in production.
+
 Clarity helps everyday investors understand markets, individual securities, and long-term financial decisions through a calmer, more explainable interface. The product direction combines portfolio visibility, plain-language research, and specialized AI agents without presenting the system as an autonomous trading bot.
 
 ### AI-Assisted Development
