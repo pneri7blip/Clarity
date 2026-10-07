@@ -28,6 +28,7 @@ The current MVP focuses on three connected experiences:
 - **Portfolio history:** profile-scoped buy/sell transaction log, manual valuation snapshots, and performance chart built from the user's recorded history.
 - **Railway-ready market data:** current quotes use a server-side Yahoo Finance adapter with short-lived caching, so the watchlist, portfolio valuation, and price alerts do not depend on Manus gateway variables.
 - **IBKR read-only foundation:** protected server procedures expose connection status, accounts, and positions through the official Client Portal API shape. Trading procedures are intentionally absent; an authenticated Client Portal Gateway is required before synchronization can be enabled.
+- **Alpaca paper foundation:** protected server procedures can read the paper account and positions through Alpaca's cloud API. Configure `ALPACA_API_KEY` and `ALPACA_SECRET_KEY` only as server-side Railway variables; paper mode remains the default and order submission is not implemented.
 
 The interface is intentionally designed for a retail audience: dense enough to be useful, but structured around explanations rather than financial jargon.
 

@@ -4,6 +4,7 @@ import { createAlert, createSnapshot, createTransaction, getInvestorProfile, get
 import { fetchLiveQuote, evaluateAlertsForProfile } from "./alertMonitor";
 import { fetchYahooQuote } from "./marketData";
 import { getIbkrStatus, listIbkrAccounts, listIbkrPositions } from "./ibkr";
+import { getAlpacaAccount, getAlpacaConfig, getAlpacaPositions } from "./alpaca";
 import { invokeLLM } from "./_core/llm";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -79,6 +80,9 @@ export const appRouter = router({
     ibkrStatus: protectedProcedure.query(() => getIbkrStatus()),
     ibkrAccounts: protectedProcedure.query(async () => listIbkrAccounts()),
     ibkrPositions: protectedProcedure.input(z.object({ accountId: z.string().min(1).max(32) })).query(async ({ input }) => listIbkrPositions(input.accountId)),
+    alpacaStatus: protectedProcedure.query(() => getAlpacaConfig()),
+    alpacaAccount: protectedProcedure.query(async () => getAlpacaAccount()),
+    alpacaPositions: protectedProcedure.query(async () => getAlpacaPositions()),
   }),
   market: router({
     quote: publicProcedure.input(quoteInput).query(({ input }) => fetchYahooQuote(input.symbol)),
