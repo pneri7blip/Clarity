@@ -3,6 +3,7 @@ import { callDataApi } from "./_core/dataApi";
 import { createAlert, createSnapshot, createTransaction, getInvestorProfile, getInvestorProfileByKey, listAlertEvents, listAlerts, listInvestorProfiles, listPositions, listSnapshots, listTransactions, replacePositions, toggleAlert, upsertInvestorProfile } from "./db";
 import { fetchLiveQuote, evaluateAlertsForProfile } from "./alertMonitor";
 import { fetchYahooQuote } from "./marketData";
+import { getIbkrStatus, listIbkrAccounts, listIbkrPositions } from "./ibkr";
 import { invokeLLM } from "./_core/llm";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -73,6 +74,11 @@ export const appRouter = router({
     create: protectedProcedure.input(z.object({ profileKey, symbol: z.string().min(1), kind: z.enum(["price_above", "price_below", "goal_risk"]), threshold: z.string().min(1) })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await createAlert(input); return { success: true } as const; }),
     toggle: protectedProcedure.input(z.object({ profileKey, id: z.number(), enabled: z.boolean() })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); await toggleAlert(input.profileKey, input.id, input.enabled); return { success: true } as const; }),
     check: protectedProcedure.input(z.object({ profileKey })).mutation(async ({ ctx, input }) => { await requireOwnedProfile(ctx.user.openId, input.profileKey); return evaluateAlertsForProfile(input.profileKey); }),
+  }),
+  broker: router({
+    ibkrStatus: protectedProcedure.query(() => getIbkrStatus()),
+    ibkrAccounts: protectedProcedure.query(async () => listIbkrAccounts()),
+    ibkrPositions: protectedProcedure.input(z.object({ accountId: z.string().min(1).max(32) })).query(async ({ input }) => listIbkrPositions(input.accountId)),
   }),
   market: router({
     quote: publicProcedure.input(quoteInput).query(({ input }) => fetchYahooQuote(input.symbol)),

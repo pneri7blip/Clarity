@@ -27,6 +27,7 @@ The current MVP focuses on three connected experiences:
 - **Private portfolio workspace:** authenticated investor profiles, CSV import, live quote enrichment, portfolio P&L, concentration metrics, and alert history.
 - **Portfolio history:** profile-scoped buy/sell transaction log, manual valuation snapshots, and performance chart built from the user's recorded history.
 - **Railway-ready market data:** current quotes use a server-side Yahoo Finance adapter with short-lived caching, so the watchlist, portfolio valuation, and price alerts do not depend on Manus gateway variables.
+- **IBKR read-only foundation:** protected server procedures expose connection status, accounts, and positions through the official Client Portal API shape. Trading procedures are intentionally absent; an authenticated Client Portal Gateway is required before synchronization can be enabled.
 
 The interface is intentionally designed for a retail audience: dense enough to be useful, but structured around explanations rather than financial jargon.
 
